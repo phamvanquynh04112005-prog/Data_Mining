@@ -1,0 +1,114 @@
+{
+  "file_name": "creditcard.csv",
+  "file_size_bytes": 150828752,
+  "sha256": "76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89",
+  "md5": "e90efcb83d69faf99fcab8b0255024de",
+  "audit_run_date": "2026-10-26",
+  "n_rows": 284807,
+  "n_cols": 31,
+  "n_nonfraud": 284315,
+  "n_fraud": 492,
+  "fraud_rate": 0.001727485630620034,
+  "majority_baseline_accuracy": 0.9982725143693799,
+  "n_missing_total": 0,
+  "dup_extra_rows": 1081,
+  "dup_extra_fraud": 19,
+  "dup_rows_in_groups": 1854,
+  "dup_fraud_in_groups": 32,
+  "dup_groups": 773,
+  "leak_test_rows": 85443,
+  "leak_test_dup_in_train": 456,
+  "leak_test_fraud": 148,
+  "leak_test_fraud_dup_in_train": 7,
+  "amount_zero_rows": 1825,
+  "amount_zero_fraud": 27,
+  "amount_negative": 0,
+  "amount_max": 25691.16,
+  "time_min": 0.0,
+  "time_max": 172792.0,
+  "time_non_integer": 0,
+  "time_sorted": true,
+  "time_ties": 160215,
+  "amount_decimals_gt2": 0,
+  "v_max_abs_offdiag_corr": 2.321486470875369e-14,
+  "v_max_abs_mean": 4.866698941746315e-15,
+  "rows_any_V_abs_z_gt10": 1924,
+  "fraud_rows_any_V_abs_z_gt10": 231,
+  "amount_skew": 16.977724453761006,
+  "amount_kurtosis": 845.0926455465267,
+  "amount_iqr_fence": 184.5125,
+  "amount_iqr_outliers": 31904,
+  "amount_iqr_outliers_fraud": 91,
+  "amount_bands": [
+    {
+      "Amount": "0",
+      "n": 1825,
+      "fraud": 27,
+      "fraud_rate_%": 1.479
+    },
+    {
+      "Amount": "0–10",
+      "n": 98439,
+      "fraud": 222,
+      "fraud_rate_%": 0.226
+    },
+    {
+      "Amount": "10–50",
+      "n": 90781,
+      "fraud": 57,
+      "fraud_rate_%": 0.063
+    },
+    {
+      "Amount": "50–100",
+      "n": 37254,
+      "fraud": 56,
+      "fraud_rate_%": 0.15
+    },
+    {
+      "Amount": "100–500",
+      "n": 47366,
+      "fraud": 95,
+      "fraud_rate_%": 0.201
+    },
+    {
+      "Amount": "500–1000",
+      "n": 6202,
+      "fraud": 26,
+      "fraud_rate_%": 0.419
+    },
+    {
+      "Amount": ">1000",
+      "n": 2940,
+      "fraud": 9,
+      "fraud_rate_%": 0.306
+    }
+  ],
+  "fraud_amount_top_values": {
+    "1.0": 113,
+    "0.0": 27,
+    "99.99": 27,
+    "0.76": 17,
+    "0.77": 10
+  },
+  "fraud_share_amount_exactly_1": 0.22967479674796748,
+  "day_table": [
+    {
+      "rel_day": 0,
+      "n": 144786,
+      "fraud": 281
+    },
+    {
+      "rel_day": 1,
+      "n": 140021,
+      "fraud": 211
+    }
+  ],
+  "review_cap_per_day": 100,
+  "max_caught_by_perfect_ranker": 200,
+  "max_recall_perfect_ranker_100_per_day": 0.4065040650406504,
+  "avg_fraud_per_day": 246.0,
+  "avg_txn_per_day": 142403.5,
+  "review_share_of_daily_txn": 0.0007022299311463553,
+  "n_quality_issues_with_evidence": 7,
+  "sha256_after": "76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89"
+}

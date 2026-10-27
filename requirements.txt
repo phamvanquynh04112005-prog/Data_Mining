@@ -1,0 +1,7 @@
+# Phiên bản đã dùng khi chạy 01_data_audit.ipynb (Python 3.12). Bản mới hơn thường vẫn chạy được.
+pandas==3.0.2
+numpy
+matplotlib
+seaborn
+scikit-learn==1.8.0
+jupyterlab
