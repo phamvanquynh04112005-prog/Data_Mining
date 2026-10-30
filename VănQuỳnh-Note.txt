@@ -1,0 +1,428 @@
+================================================================================
+HỒ SƠ GHI CHÚ TOÀN DIỆN — THÀNH VIÊN C (PHẠM VĂN QUỲNH)
+ĐỒ ÁN CUỐI KỲ MÔN KHAI THÁC DỮ LIỆU (DATA MINING)
+Đề tài 6: Ngân hàng — Phát hiện giao dịch thẻ gian lận (Credit Card Fraud Detection)
+Câu hỏi kinh doanh trung tâm: "Với ngân sách rà soát 100 giao dịch mỗi ngày,
+                              ta bắt được bao nhiêu phần trăm gian lận?"
+Ngày hoàn thành: 30/10/2026
+Kho GitHub nhóm: https://github.com/phamvanquynh04112005-prog/Data_Mining.git
+================================================================================
+
+MỤC LỤC
+1. TỔNG QUAN VAI TRÒ & 14 NHIỆM VỤ CỦA THÀNH VIÊN C (QUỲNH)
+2. MÔI TRƯỜNG, PHIÊN BẢN CÔNG CỤ & THƯ VIỆN SỬ DỤNG
+3. HƯỚNG DẪN CÀI ĐẶT CHI TIẾT TỪ CON SỐ 0 (PYTHON, POSTGRESQL 16 & XỬ LÝ LỖI)
+4. HƯỚNG LÀM & TƯ DUY THIẾT KẾ KHO DỮ LIỆU (STAR SCHEMA, ETL, OLAP, VIEWS)
+5. DANH SÁCH TOÀN BỘ CÁC FILE ĐÃ HOÀN THÀNH & Ý NGHĨA TỪNG FILE
+6. KẾT QUẢ THỰC THI & CÁC CON SỐ ĐỐI SOÁT THỰC TẾ (DÙNG ĐỂ BÁO CÁO & VẤN ĐÁP)
+7. QUY TRÌNH CHẠY LẠI TOÀN BỘ PIPELINE (IDEMPOTENT) & CẬP NHẬT ĐIỂM MÔ HÌNH
+8. CÂU HỎI & TRẢ LỜI ÔN TẬP KHI BẢO VỆ ĐỒ ÁN PHẦN KHO DỮ LIỆU & OLAP
+
+================================================================================
+1. TỔNG QUAN VAI TRÒ & 14 NHIỆM VỤ CỦA THÀNH VIÊN C (QUỲNH)
+================================================================================
+
+Trong nhóm 5 thành viên (A: Khang, B: Cường, C: Quỳnh, D: Huy, E: Mong),
+Thành viên C (Quỳnh) đảm nhận vai trò DATA ENGINEER (Kỹ sư Kho dữ liệu & OLAP):
+- Chịu trách nhiệm chính cho Mục 3 của báo cáo cuối kỳ (Kho dữ liệu PostgreSQL,
+  Star Schema, ETL Pipeline và Phân tích OLAP).
+- Là cầu nối dữ liệu giữa Phần A (Audit dữ liệu thô của Khang), Phần B & D
+  (Tiền xử lý & Mô hình học máy của Cường, Huy) và Phần E (Dashboard Apache
+  Superset & Đánh giá kinh doanh của Mong).
+
+Chi tiết 14 bước nhiệm vụ (C1 -> C14) theo tài liệu thiết kế của nhóm:
+- [Bước C1] Đọc và đối chiếu toàn bộ đầu ra của Thành viên A (Khang):
+  + File: outputs/audit_metrics.json, outputs/data_dictionary.csv,
+    outputs/quality_issues.csv, outputs/data_audit_summary.md.
+  + Xác nhận tập dữ liệu gốc data/raw/creditcard.csv gồm đúng 284,807 dòng,
+    31 cột (Time, V1..V28, Amount, Class), 492 giao dịch gian lận (0.1727%),
+    SHA-256 = 76274b691b16a6c49d3f159c883398e03f6d3699b9d267a31206694e98551a89.
+- [Bước C2] Định nghĩa độ mịn (Grain) của bảng sự kiện Fact_Transaction:
+  + Mỗi dòng trong Fact_Transaction biểu diễn đúng 1 sự kiện giao dịch thẻ
+    trong tập dữ liệu gốc (1-1 với 284,807 dòng), định danh bằng khóa tự sinh
+    transaction_seq_id (1..284807) theo thứ tự thời gian gốc.
+- [Bước C3] Thiết kế 4 bảng chiều (Dimensions) cho mô hình Star Schema:
+  + Dim_Date (2 dòng: Ngày tương đối 0 và Ngày tương đối 1).
+  + Dim_Hour (48 dòng: Giờ tương đối 0..47 trong khoảng 48 giờ quan sát).
+  + Dim_AmountBand (7 dòng: 7 dải giá trị giao dịch khớp 100% với EDA Phần A).
+  + Dim_Channel (3 dòng: Chiều kênh giao dịch MÔ PHỎNG / SYNTHETIC có gắn cờ
+    is_synthetic = TRUE và ghi chú học thuật minh bạch).
+- [Bước C4] Vẽ sơ đồ ERD (Mermaid) và lập đặc tả chi tiết bảng/cột, khóa chính
+  (PK), khóa ngoại (FK), quy tắc chống NULL tại outputs/star_schema_erd.md.
+- [Bước C5] Viết script sql/01-staging.sql (Idempotent):
+  + Tạo bảng stg_raw_transactions (nạp 284,807 dòng từ creditcard.csv) và bảng
+    stg_model_scores (hứng điểm mô hình từ Thành viên D & E).
+- [Bước C6] Viết script sql/02-star-schema.sql (Idempotent):
+  + Tạo 4 bảng chiều Dim_* và bảng sự kiện Fact_Transaction cùng các ràng buộc
+    PK, FK, CHECK và 8 chỉ mục (Indexes) tối ưu hóa truy vấn OLAP.
+- [Bước C7] Viết script sql/03-transform.sql (Idempotent):
+  + Nạp dữ liệu cho 4 bảng chiều, biến đổi dữ liệu từ stg_raw_transactions sang
+    Fact_Transaction, tính toán các cờ chất lượng dữ liệu (is_duplicate cho
+    DQ-01, is_zero_amount cho DQ-02, has_extreme_v_z10 và max_abs_v_zscore cho
+    DQ-06) mà không làm mất bất kỳ dòng dữ liệu nào.
+- [Bước C8] Thiết kế cơ chế tích hợp điểm mô hình (iforest_score, lof_score,
+  ae_recon_error, logreg_prob, lgbm_prob, daily_alert_rank, is_top100_daily_alert)
+  vào bảng Fact_Transaction.
+- [Bước C9] Chạy kiểm chứng toàn vẹn dữ liệu (Reconciliation) trên PostgreSQL
+  thực tế và lập báo cáo outputs/warehouse_validation_report.md.
+- [Bước C10] Viết bộ 5 truy vấn OLAP nâng cao tại sql/olap_queries.sql sử dụng
+  ROLLUP, CUBE, GROUPING SETS và WINDOW FUNCTIONS để trả lời trực tiếp câu hỏi
+  kinh doanh về ngân sách 100 giao dịch/ngày.
+- [Bước C11] Tạo 6 SQL Views chuẩn hóa tại sql/04-dashboard-views.sql phục vụ
+  trực tiếp cho Apache Superset của Thành viên E (Mong).
+- [Bước C12] Viết script sql/05-load-model-scores.sql để tự động nạp điểm mô hình
+  từ file CSV vào kho dữ liệu và cập nhật Fact_Transaction.
+- [Bước C13] Chạy thực tế toàn bộ 6 Views và 5 truy vấn OLAP trên PostgreSQL 16,
+  trích xuất bảng kết quả thật 100%.
+- [Bước C14] Đóng gói báo cáo OLAP & Biên bản bàn giao chuẩn Mục G tại
+  outputs/olap_and_handover_summary.md, cập nhật README.md và đẩy lên GitHub.
+
+
+================================================================================
+2. MÔI TRƯỜNG, PHIÊN BẢN CÔNG CỤ & THƯ VIỆN SỬ DỤNG
+================================================================================
+
+1. Hệ điều hành:
+   - Windows 10/11 (64-bit), sử dụng Windows PowerShell 5.1.
+2. Hệ quản trị Cơ sở dữ liệu (Data Warehouse):
+   - PostgreSQL: Phiên bản 16.15-5 (Windows x64, cài qua gói chính thức của
+     EnterpriseDB trên Microsoft Winget: PostgreSQL.PostgreSQL.16).
+   - Đường dẫn cài đặt mặc định: C:\Program Files\PostgreSQL\16\bin
+   - Đường dẫn thư mục dữ liệu (PGDATA): C:\Program Files\PostgreSQL\16\data
+   - Cổng kết nối (Port): 5432
+   - Role (User) phục vụ đồ án: dm (Mật khẩu: dm, quyền CREATEDB)
+   - Tên Database: dm_course (Encoding: UTF8)
+   - Chuỗi kết nối chuẩn (SQLALCHEMY URI cho Python & Apache Superset):
+     postgresql+psycopg2://dm:dm@localhost:5432/dm_course
+3. Môi trường Python (.venv) & Các thư viện trong requirements.txt:
+   - numpy==1.26.4
+   - pandas==2.2.2
+   - scipy==1.13.1
+   - scikit-learn==1.5.1
+   - imbalanced-learn==0.12.3
+   - lightgbm==4.5.0
+   - shap==0.46.0
+   - matplotlib==3.9.1
+   - seaborn==0.13.2
+   - sqlalchemy==2.0.31
+   - psycopg2-binary==2.9.9
+   - jupyter==1.0.0
+   - ipykernel==6.29.5
+
+
+================================================================================
+3. HƯỚNG DẪN CÀI ĐẶT CHI TIẾT TỪ CON SỐ 0 (PYTHON, POSTGRESQL 16 & XỬ LÝ LỖI)
+================================================================================
+
+3.1. Cài đặt môi trường ảo Python và thư viện
+---------------------------------------------
+Tại thư mục gốc của dự án (D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project):
+  python -m venv .venv
+  .\.venv\Scripts\activate
+  pip install -r requirements.txt
+
+3.2. Cài đặt PostgreSQL 16 trên Windows (Không cần Docker)
+----------------------------------------------------------
+Mở PowerShell (quyền Administrator) và chạy lệnh cài đặt qua Winget:
+  winget install -e --id PostgreSQL.PostgreSQL.16
+
+Sau khi cài xong, thêm đường dẫn psql vào PATH của phiên làm việc:
+  $env:Path += ";C:\Program Files\PostgreSQL\16\bin"
+
+3.3. Cách xử lý 3 lỗi thực tế thường gặp trên Windows (Đã giải quyết triệt để)
+------------------------------------------------------------------------------
+- LỖI 1: Cài PostgreSQL qua winget không hiện bảng nhập mật khẩu nên không biết
+  mật khẩu của user 'postgres' (báo lỗi: password authentication failed for user "postgres").
+  -> CÁCH GIẢI QUYẾT:
+     Viết script tự động sql/setup_local_db.ps1 chạy bằng quyền Administrator.
+     Script này tự động chỉnh file cấu hình C:\Program Files\PostgreSQL\16\data\pg_hba.conf
+     từ 'scram-sha-256' sang 'trust' cho kết nối nội bộ (127.0.0.1/32 và ::1/128),
+     chạy pg_ctl reload để nạp lại cấu hình không cần khởi động lại máy, sau đó
+     đặt lại mật khẩu cho 'postgres', tạo role 'dm' (mật khẩu 'dm') và tạo
+     database 'dm_course' với quyền sở hữu thuộc về 'dm'.
+
+- LỖI 2: Windows PowerShell 5.1 đọc nhầm tiếng Việt UTF-8 không BOM trong file .ps1
+  thành mã Windows-1252 làm vỡ dấu ngoặc kép.
+  -> CÁCH GIẢI QUYẾT:
+     Chuẩn hóa toàn bộ thông báo console trong các file script PowerShell
+     (sql/setup_local_db.ps1, sql/run_warehouse.ps1, sql/run_olap_and_views.ps1)
+     về ký tự ASCII chuẩn, đảm bảo chạy ổn định trên mọi máy Windows.
+
+- LỖI 3: Công cụ psql trên Windows mặc định dùng bảng mã console WIN1252 nên khi
+  chạy file .sql có chú thích tiếng Việt UTF-8 bị báo lỗi:
+  "character with byte sequence 0x9d in encoding WIN1252 has no equivalent in encoding UTF8".
+  -> CÁCH GIẢI QUYẾT:
+     + Đặt lệnh `SET client_encoding = 'UTF8';` ở dòng đầu tiên của tất cả các
+       file .sql (01-staging.sql, 02-star-schema.sql, 03-transform.sql,
+       04-dashboard-views.sql, 05-load-model-scores.sql, olap_queries.sql).
+     + Đặt `$env:PGCLIENTENCODING = "UTF8"` trong các script PowerShell.
+
+
+================================================================================
+4. HƯỚNG LÀM & TƯ DUY THIẾT KẾ KHO DỮ LIỆU (STAR SCHEMA, ETL, OLAP, VIEWS)
+================================================================================
+
+4.1. Tại sao thiết kế Star Schema gồm 1 Fact + 4 Dimensions?
+------------------------------------------------------------
+Tập dữ liệu gốc creditcard.csv (ULB Kaggle) đã bị ẩn danh hóa qua phép biến đổi
+PCA (28 cột V1..V28), chỉ còn 3 cột có ngữ nghĩa trực tiếp là Time (số giây
+trôi qua tính từ giao dịch đầu tiên, 0..172792s ~ 48 giờ), Amount (số tiền giao
+dịch) và Class (0 = Hợp lệ, 1 = Gian lận).
+Để xây dựng một Star Schema chuẩn mực (yêu cầu tối thiểu 1 Fact + 3 Dimensions)
+mà KHÔNG vi phạm nguyên tắc học thuật (không được bịa tên nghiệp vụ cho V1..V28,
+không được gán ngày tháng lịch thực tế cho Time), kho dữ liệu được thiết kế gồm:
+
+1) Bảng sự kiện trung tâm: Fact_Transaction (284,807 dòng)
+   - Khóa chính: transaction_seq_id (1..284807) được sinh bằng hàm cửa sổ
+     ROW_NUMBER() OVER (ORDER BY time_sec ASC, ctid ASC) để giữ nguyên thứ tự gốc.
+   - 4 khóa ngoại: date_key, hour_key, amount_band_key, channel_key.
+   - Các độ đo (Measures): time_sec, amount, amount_log1p = LN(1 + amount),
+     class_label (0/1), max_abs_v_zscore = GREATEST(|V1|, ..., |V28|), cùng
+     28 cột đặc trưng gốc v1..v28.
+   - 3 cờ Chất lượng dữ liệu (Data Quality Flags) chuyển hóa từ Phần A của Khang:
+     + is_duplicate (DQ-01): Đánh dấu 1,081 dòng trùng lặp dư ra trên cả 31 cột
+       (giữ dòng đầu tiên is_duplicate = FALSE cho 283,726 dòng duy nhất).
+       Nhờ vậy, kho dữ liệu vừa bảo toàn 100% 284,807 dòng thô, vừa cho phép
+       truy vấn tập đã khử trùng chỉ bằng điều kiện WHERE is_duplicate = FALSE!
+     + is_zero_amount (DQ-02): Đánh dấu 1,825 giao dịch có Amount = 0 (hành vi
+       thử thẻ / zero-amount authorization).
+     + has_extreme_v_z10 (DQ-06): Đánh dấu 1,924 giao dịch có ít nhất 1 thành
+       phần |V1..V28| > 10.
+   - Các cột tích hợp điểm mô hình (Model Score Columns): split_role,
+     iforest_score, lof_score, ae_recon_error, logreg_prob, lgbm_prob,
+     daily_alert_rank, is_top100_daily_alert, selected_model_name.
+
+2) Bảng chiều 1: Dim_Date (2 dòng — Ngày tương đối)
+   - date_key = FLOOR(time_sec / 86400)::INT (nhận giá trị 0 hoặc 1).
+   - Phục vụ trực tiếp câu hỏi kinh doanh: "Ngân sách rà soát 100 giao dịch
+     MỖI NGÀY" (tức 100 giao dịch cho Relative Day 0 và 100 giao dịch cho
+     Relative Day 1, tổng cộng 200 giao dịch rà soát trong 48 giờ).
+
+3) Bảng chiều 2: Dim_Hour (48 dòng — Giờ tương đối 0..47)
+   - hour_key = FLOOR(time_sec / 3600)::INT (nhận giá trị 0..47).
+   - Chứa thuộc tính phân cấp: date_key (0..1), hour_in_day_offset (0..23) và
+     day_cycle_label (4 khung 6 tiếng tương đối mỗi ngày) để thực hiện thao tác
+     Roll-up / Drill-down từ Ngày -> Chu kỳ 6h -> Từng giờ tương đối.
+
+4) Bảng chiều 3: Dim_AmountBand (7 dòng — Dải giá trị giao dịch)
+   - Chia cột Amount thành đúng 7 dải khớp 100% với phân tích EDA của Khang (A):
+     + Key 1: '0'          (Amount = 0)
+     + Key 2: '(0, 1]'     (0 < Amount <= 1)
+     + Key 3: '(1, 10]'    (1 < Amount <= 10)
+     + Key 4: '(10, 50]'   (10 < Amount <= 50)
+     + Key 5: '(50, 200]'  (50 < Amount <= 200)
+     + Key 6: '(200, 1000]'(200 < Amount <= 1000)
+     + Key 7: '> 1000'     (Amount > 1000)
+
+5) Bảng chiều 4: Dim_Channel (3 dòng — Kênh giao dịch MÔ PHỎNG / SYNTHETIC)
+   - Được thiết kế thêm (bên cạnh 3 chiều thực tế trên) để làm phong phú cấu trúc
+     Star Schema, nhưng tuân thủ tuyệt đối tính trung thực học thuật: có cột
+     is_synthetic = TRUE và ghi chú rõ đây là chiều phân bổ tất định (deterministic
+     modulo hash) chỉ dùng để minh họa kỹ thuật JOIN đa bảng, tuyệt đối không
+     dùng để huấn luyện mô hình hay rút ra kết luận nghiệp vụ thật.
+
+
+================================================================================
+5. DANH SÁCH TOÀN BỘ CÁC FILE ĐÃ HOÀN THÀNH & Ý NGHĨA TỪNG FILE
+================================================================================
+
+Tổng cộng Phần C đã tạo mới và cập nhật 13 file trong dự án (đã push ở commit 2bb9080):
+
+1. outputs/star_schema_erd.md
+   -> Tài liệu thiết kế kiến trúc Kho dữ liệu: Định nghĩa Grain, sơ đồ ERD bằng
+      Mermaid, đặc tả chi tiết từng bảng/cột, quy tắc khóa chính/khóa ngoại và
+      chính sách xử lý NULL / dữ liệu trùng lặp.
+2. sql/setup_local_db.ps1
+   -> Script PowerShell tự động cấu hình xác thực PostgreSQL local, khởi tạo
+      role 'dm' và database 'dm_course', sau đó chạy kiểm tra schema.
+3. sql/01-staging.sql
+   -> Script SQL thứ nhất: Tạo bảng stg_raw_transactions và stg_model_scores;
+      sử dụng lệnh \copy nạp toàn bộ 284,807 dòng từ data/raw/creditcard.csv.
+4. sql/02-star-schema.sql
+   -> Script SQL thứ hai: Tạo 4 bảng chiều (Dim_Date, Dim_Hour, Dim_AmountBand,
+      Dim_Channel) và bảng sự kiện Fact_Transaction cùng 8 chỉ mục (Indexes).
+5. sql/03-transform.sql
+   -> Script SQL thứ ba: Điền dữ liệu cho 4 bảng chiều, biến đổi dữ liệu từ
+      Staging sang Fact_Transaction, tính toán các cờ DQ-01, DQ-02, DQ-06 và
+      in ra bảng báo cáo đối soát tự động ở cuối script.
+6. sql/04-dashboard-views.sql
+   -> Tạo 6 SQL Views chuẩn hóa trong database dm_course để Thành viên E (Mong)
+      kết nối Apache Superset vẽ biểu đồ ngay lập tức:
+      + vw_dash_01_daily_budget_kpi
+      + vw_dash_02_hourly_fraud_trend
+      + vw_dash_03_amount_band_risk
+      + vw_dash_04_data_quality_impact
+      + vw_dash_05_channel_simulation_notice
+      + vw_dash_06_model_vs_baseline_comparison
+7. sql/05-load-model-scores.sql
+   -> Script tích hợp điểm mô hình từ file outputs/model_scores_warehouse.csv
+      (do Huy D & Mong E xuất ra) vào bảng stg_model_scores và UPDATE ngược
+      lên Fact_Transaction.
+8. sql/olap_queries.sql
+   -> Bộ 5 truy vấn OLAP chuyên sâu sử dụng ROLLUP, CUBE, GROUPING SETS và
+      WINDOW FUNCTIONS.
+9. sql/run_warehouse.ps1
+   -> Script chạy tự động liên hoàn 3 file: 01-staging.sql -> 02-star-schema.sql
+      -> 03-transform.sql với cấu hình UTF-8 chuẩn.
+10. sql/run_olap_and_views.ps1
+    -> Script chạy tự động 04-dashboard-views.sql và olap_queries.sql.
+11. outputs/warehouse_validation_report.md
+    -> Báo cáo nghiệm thu và đối soát toàn vẹn kho dữ liệu (chứng minh số dòng,
+       số gian lận, tổng tiền, các cờ DQ khớp 100% với Audit của Khang A).
+12. outputs/olap_and_handover_summary.md
+    -> Báo cáo phân tích chi tiết kết quả 5 truy vấn OLAP, từ điển 6 Views
+       Superset và Biên bản bàn giao chính thức chuẩn Mục G.
+13. README.md
+    -> Cập nhật hướng dẫn tái lập (reproducibility) cho cả Phần A và Phần C.
+
+
+================================================================================
+6. KẾT QUẢ THỰC THI & CÁC CON SỐ ĐỐI SOÁT THỰC TẾ (DÙNG ĐỂ BÁO CÁO & VẤN ĐÁP)
+================================================================================
+
+6.1. Bảng số liệu đối soát toàn vẹn Kho dữ liệu (Bước C9)
+---------------------------------------------------------
+- Tổng số dòng nạp vào stg_raw_transactions : 284,807 dòng
+- Tổng số dòng trong Fact_Transaction       : 284,807 dòng (Khớp 100%)
+- Tổng số giao dịch gian lận (class_label=1): 492 dòng (0.1727%)
+- Tổng số giao dịch hợp lệ (class_label=0)  : 284,315 dòng (99.8273%)
+- Tổng giá trị giao dịch (SUM(amount))      : 25,162,590.01 (TB = 88.3496)
+- Tổng giá trị giao dịch gian lận           : 60,127.97 (TB = 122.2113)
+- Số dòng trùng lặp dư ra (DQ-01, is_duplicate = TRUE):
+  + 1,081 dòng (trong đó có 19 dòng gian lận, tỷ lệ gian lận = 1.7576%).
+  + Số dòng sau khi khử trùng (is_duplicate = FALSE): 283,726 dòng (473 gian lận).
+- Số giao dịch có Amount = 0 (DQ-02, is_zero_amount = TRUE):
+  + 1,825 dòng (trong đó có 27 dòng gian lận, tỷ lệ gian lận = 1.4795%, cao gấp
+    8.56 lần trung bình toàn cục).
+- Số giao dịch có ngoại lai |V1..V28| > 10 (DQ-06, has_extreme_v_z10 = TRUE):
+  + 1,924 dòng (trong đó chứa tới 231 dòng gian lận, tỷ lệ gian lận = 12.0062%,
+    chiếm tới 46.95% tổng số vụ gian lận của toàn bộ tập dữ liệu!).
+- Số dòng bị NULL khóa ngoại (date_key, hour_key, amount_band_key, channel_key):
+  + 0 dòng (Đạt chuẩn toàn vẹn tham chiếu 100%).
+
+6.2. Kết quả 5 Truy vấn OLAP cốt lõi (Bước C10 & C13)
+-----------------------------------------------------
+[OLAP 1 - GROUP BY ROLLUP]: Trần lý thuyết với ngân sách 100 giao dịch/ngày:
+- Relative Day 0 (0s - 86,399s):
+  + Tổng giao dịch: 144,786 | Số gian lận: 281 (272 sau khử trùng).
+  + Ngân sách 100 GD/ngày chiếm 0.0691% lưu lượng giao dịch trong ngày.
+  + Trần Recall tối đa lý thuyết (nếu mô hình đúng 100% cả 100 ca):
+    100 / 281 = 35.59% (hoặc 100 / 272 = 36.76% tính trên tập đã khử trùng).
+- Relative Day 1 (86,400s - 172,792s):
+  + Tổng giao dịch: 140,021 | Số gian lận: 211 (201 sau khử trùng).
+  + Ngân sách 100 GD/ngày chiếm 0.0714% lưu lượng giao dịch trong ngày.
+  + Trần Recall tối đa lý thuyết:
+    100 / 211 = 47.39% (hoặc 100 / 201 = 49.75% tính trên tập đã khử trùng).
+- Tổng cộng 2 ngày tương đối (ALL DAYS):
+  + Tổng giao dịch: 284,807 | Tổng gian lận: 492 (473 sau khử trùng).
+  + Tổng ngân sách rà soát 2 ngày: 200 giao dịch (0.0702% lưu lượng).
+  + Trần Recall tối đa lý thuyết toàn cục:
+    200 / 492 = 40.65% (hoặc 200 / 473 = 42.28% sau khử trùng).
+-> KẾT LUẬN KINH DOANH TỪ OLAP 1: Vì số vụ gian lận thực tế mỗi ngày (281 và 211)
+   lớn hơn ngân sách rà soát (100 ca/ngày), không một mô hình nào trên đời có thể
+   đạt Recall > 40.65% ở ngưỡng k = 100/ngày. Do đó phải đánh giá mô hình dựa
+   trên cả Precision@100, Recall@100 và % đạt được so với Trần lý thuyết (200 vụ).
+
+[OLAP 2 - GROUP BY CUBE]: Phân tích đa chiều Dải tiền x Chu kỳ ngày:
+- Dải '0' (= 0)      :  1,825 GD |  27 fraud (1.4795%) | 5.49% tổng số vụ fraud
+- Dải '(0, 1]'       : 29,215 GD | 158 fraud (0.5408%) | 32.11% tổng số vụ fraud
+- Dải '(1, 10]'      : 70,115 GD |  64 fraud (0.0913%) | 13.01% tổng số vụ fraud
+- Dải '(10, 50]'     : 90,781 GD |  57 fraud (0.0628%) | 11.59% tổng số vụ fraud
+- Dải '(50, 200]'    : 63,972 GD | 101 fraud (0.1579%) | 20.53% tổng số vụ fraud
+- Dải '(200, 1000]'  : 25,959 GD |  76 fraud (0.2928%) | 15.45% tổng số vụ fraud
+- Dải '> 1000'       :  2,940 GD |   9 fraud (0.3061%) | 1.83% tổng số vụ fraud
+-> KẾT LUẬN TỪ OLAP 2: 37.60% số vụ gian lận nằm ở các giao dịch <= 1 đơn vị tiền
+   tệ (thử thẻ), nhưng 76.24% tổng số tiền thiệt hại lại nằm ở dải (50, 1000].
+
+[OLAP 3 - WINDOW FUNCTIONS]: Xu hướng 48 giờ tương đối & Trung bình trượt 3 giờ:
+- Các khung giờ tương đối có tỷ lệ gian lận cao nhất đều rơi vào offset +02h..+04h
+  của cả hai ngày:
+  + Hour 26 (Day 1, offset +02h): 1,752 GD, 36 gian lận -> Tỷ lệ 2.0548% (Hạng 1)
+  + Hour 02 (Day 0, offset +02h): 1,576 GD, 21 gian lận -> Tỷ lệ 1.3325% (Hạng 2)
+  + Hour 28 (Day 1, offset +04h): 1,126 GD, 14 gian lận -> Tỷ lệ 1.2433% (Hạng 3)
+  + Hour 04 (Day 0, offset +04h): 1,082 GD,  9 gian lận -> Tỷ lệ 0.8318% (Hạng 4)
+
+[OLAP 4 - GROUPING SETS]: Kiểm định tổ hợp 3 cờ chất lượng dữ liệu:
+- Giao dịch vừa có Amount = 0 (DQ-02) vừa có |z| > 10 (DQ-06) và không trùng:
+  Có 30 giao dịch thì tới 16 giao dịch là gian lận -> Tỷ lệ gian lận = 53.3333%
+  (Hệ số Lift = 308.77 lần so với mức nền 0.1727%!).
+- Riêng nhóm có |z| > 10 (DQ-06): 1,924 GD chứa 231 gian lận (Lift = 69.51 lần).
+  Chứng minh tuyệt đối không được cắt bỏ (clip/remove) ngoại lai trên V1..V28.
+
+[OLAP 5 - TOP-100 WINDOW RANKING]: So sánh các Baseline @ 100 giao dịch/ngày:
+- Trần lý thuyết (Oracle Perfect Model): Bắt 200 vụ / 200 ca rà soát (Recall 40.65%).
+- Baseline 1 (Rà soát ngẫu nhiên 100 GD/ngày): Kỳ vọng bắt được 0.34 vụ trong
+  2 ngày (Precision@100 = 0.17%, Recall = 0.07%).
+- Baseline 2 (Luật thủ công: Rà soát Top-100 GD có Amount lớn nhất mỗi ngày):
+  Bắt được ĐÚNG 0 VỤ GIAN LẬN (Precision@100 = 0.00%, Recall = 0.00%) ở cả
+  Ngày 0 lẫn Ngày 1! Lý do: 200 giao dịch lớn nhất đều > 2,125.87 và đều là
+  giao dịch hợp lệ, trong khi giao dịch gian lận lớn nhất chỉ là 2,125.87.
+- Baseline 3 (Heuristic không giám sát: Top-100 Max(|V1..V28|) mỗi ngày):
+  Bắt được 35 vụ gian lận (23 vụ Ngày 0 + 12 vụ Ngày 1), đạt Precision@100 = 17.50%,
+  Recall = 7.11% (tốt gấp hơn 100 lần so với chọn ngẫu nhiên).
+
+
+================================================================================
+7. QUY TRÌNH CHẠY LẠI TOÀN BỘ PIPELINE (IDEMPOTENT) & CẬP NHẬT ĐIỂM MÔ HÌNH
+================================================================================
+
+Mọi script đều được thiết kế Idempotent (chạy lại bao nhiêu lần cũng ra đúng một
+kết quả duy nhất, không báo lỗi, không bị nhân đôi dữ liệu):
+
+Bước 1: Mở PowerShell tại thư mục dự án:
+  cd D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project
+
+Bước 2: Chạy lại toàn bộ Kho dữ liệu (Staging -> Star Schema -> Transform):
+  powershell -ExecutionPolicy Bypass -File "sql\run_warehouse.ps1"
+
+Bước 3: Chạy lại 6 Dashboard Views và 5 truy vấn OLAP:
+  powershell -ExecutionPolicy Bypass -File "sql\run_olap_and_views.ps1"
+
+Bước 4 (Khi Thành viên D & E xuất xong điểm mô hình ra outputs/model_scores_warehouse.csv):
+  $env:Path += ";C:\Program Files\PostgreSQL\16\bin"
+  $env:PGPASSWORD = "dm"
+  $env:PGCLIENTENCODING = "UTF8"
+  psql -U dm -h localhost -p 5432 -d dm_course -f "sql/05-load-model-scores.sql"
+
+
+================================================================================
+8. CÂU HỎI & TRẢ LỜI ÔN TẬP KHI BẢO VỆ ĐỒ ÁN PHẦN KHO DỮ LIỆU & OLAP
+================================================================================
+
+Câu hỏi 1: "Tại sao tập dữ liệu gốc chỉ có 1 bảng phẳng creditcard.csv mà em lại
+           tách thành Star Schema gồm 1 bảng Fact và 4 bảng Dimension?"
+-> Trả lời:
+   Thứ nhất, việc tách thành Fact_Transaction và các bảng chiều Dim_Date,
+   Dim_Hour, Dim_AmountBand giúp chuẩn hóa các quy tắc phân nhóm nghiệp vụ
+   (như biên của 7 dải tiền, công thức quy đổi ngày tương đối 0..1, giờ tương
+   đối 0..47 và chu kỳ 6 giờ) vào một nơi duy nhất. Khi làm OLAP hay vẽ
+   Dashboard trên Apache Superset, ta chỉ cần JOIN theo khóa nguyên (Integer
+   Surrogate Key) thay vì phải viết lại các biểu thức CASE WHEN phức tạp.
+   Thứ hai, riêng bảng Dim_Channel được nhóm thiết kế thêm và đánh dấu rõ ràng
+   is_synthetic = TRUE để vừa minh họa kỹ thuật kết nối đa chiều của Star Schema,
+   vừa đảm bảo tính trung thực học thuật tuyệt đối (không suy diễn sai sự thật).
+
+Câu hỏi 2: "Làm thế nào em xử lý 1,081 dòng trùng lặp (DQ-01) trong kho dữ liệu
+           mà không làm lệch số dòng 284,807 của tập dữ liệu gốc?"
+-> Trả lời:
+   Trong bảng Fact_Transaction, em không xóa vật lý 1,081 dòng trùng lặp mà sử
+   dụng hàm cửa sổ ROW_NUMBER() OVER (PARTITION BY time_sec, amount, class_label,
+   v1..v28 ORDER BY transaction_seq_id) để gắn cờ boolean `is_duplicate = TRUE`
+   cho các bản sao thứ 2 trở đi. Nhờ vậy, tổng số dòng trong Fact_Transaction
+   vẫn bảo toàn 100% là 284,807 dòng (492 gian lận), nhưng bất kỳ truy vấn OLAP
+   hay mô hình nào cần số liệu đã khử trùng chỉ cần lọc `WHERE is_duplicate = FALSE`
+   sẽ thu được chính xác 283,726 dòng (473 gian lận).
+
+Câu hỏi 3: "Phát hiện quan trọng nhất từ các truy vấn OLAP của em là gì?"
+-> Trả lời:
+   Có 3 phát hiện cốt lõi trực tiếp định hướng cho bài toán:
+   1) Với ngân sách rà soát 100 giao dịch/ngày, trần Recall lý thuyết tối đa chỉ
+      là 35.59% ở Ngày 0, 47.39% ở Ngày 1 và 40.65% trên cả 2 ngày (200/492 vụ).
+   2) Luật thủ công truyền thống "Rà soát 100 giao dịch có số tiền lớn nhất mỗi
+      ngày" thất bại hoàn toàn (bắt được 0 vụ gian lận, Precision@100 = 0%),
+      trong khi 37.60% số vụ gian lận lại nằm ở các giao dịch <= 1 đơn vị tiền tệ.
+   3) Các giao dịch có ngoại lai |V1..V28| > 10 (chỉ 1,924 dòng) chứa tới 231
+      vụ gian lận (chiếm 46.95% tổng số gian lận toàn tập, Lift gấp 69.51 lần),
+      chứng minh ở khâu tiền xử lý tuyệt đối không được cắt bỏ ngoại lai của V1..V28.
+================================================================================
+
