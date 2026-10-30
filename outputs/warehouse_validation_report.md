@@ -1,9 +1,10 @@
 # Báo cáo Đối soát Toàn vẹn Kho dữ liệu PostgreSQL (Bước C9)
 
 **Người thực hiện:** Quỳnh (Thành viên C — Data Engineer)  
-**Trạng thái:** **ĐÃ KIỂM CHỨNG THỰC TẾ TRÊN POSTGRESQL 16.15** (Ngày chạy: 30/10/2026)  
+**Trạng thái:** **ĐÃ KIỂM CHỨNG THỰC TẾ TRÊN POSTGRESQL 16.15-5** (Ngày chạy: 30/10/2026)  
 **Cơ sở dữ liệu:** `postgresql://dm:dm@localhost:5432/dm_course`  
-**Quy trình chạy:** Chạy tuần tự từ đầu `sql/01-staging.sql` $\rightarrow$ `sql/02-star-schema.sql` $\rightarrow$ `sql/03-transform.sql` thông qua `sql/run_warehouse.ps1`.
+**Log thực thi nguyên bản đính kèm:** `outputs/postgres_execution_log.txt`  
+**Quy trình chạy:** Chạy tuần tự từ đầu `sql/01-staging.sql` $\rightarrow$ `sql/02-star-schema.sql` $\rightarrow$ `sql/03-transform.sql` $\rightarrow$ `sql/05-load-model-scores.sql` thông qua `sql/run_warehouse.ps1` (hoặc `python sql/run_pipeline.py`).
 
 ---
 

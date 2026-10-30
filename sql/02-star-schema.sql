@@ -113,12 +113,11 @@ CREATE TABLE Fact_Transaction (
     lof_score           NUMERIC(12, 6) NULL,
     lof_daily_rank      INT            NULL CHECK (lof_daily_rank IS NULL OR lof_daily_rank >= 1),
     sup_prob_score      NUMERIC(12, 6) NULL,
-    sup_daily_rank      INT            NULL CHECK (sup_daily_rank IS NULL OR sup_daily_rank >= 1),
-    anomaly_score       NUMERIC(12, 6) NULL
+    sup_daily_rank      INT            NULL CHECK (sup_daily_rank IS NULL OR sup_daily_rank >= 1)
 );
 
 COMMENT ON TABLE Fact_Transaction IS
-'Bảng Fact chính của Star Schema. Grain: 1 dòng = 1 giao dịch thẻ tín dụng (tổng 284.807 dòng, trong đó 492 gian lận).';
+'Bảng Fact chính của Star Schema. Grain: 1 dòng = 1 giao dịch thẻ tín dụng (tổng 284.807 dòng, trong đó 492 gian lận). Điểm của từng mô hình (iforest_score, lof_score, sup_prob_score) được tách cột riêng biệt vì khác thang đo.';
 
 COMMENT ON COLUMN Fact_Transaction.is_duplicate IS
 'Cờ đánh dấu 1.081 bản sao thừa trên toàn bộ 31 cột (DQ-01). Giúp lọc linh hoạt giữa toàn bộ dữ liệu (284.807) và dữ liệu khử trùng (283.726).';
@@ -137,6 +136,7 @@ CREATE INDEX idx_fact_txn_is_fraud        ON Fact_Transaction(is_fraud);
 CREATE INDEX idx_fact_txn_is_duplicate    ON Fact_Transaction(is_duplicate);
 CREATE INDEX idx_fact_txn_iforest_rank    ON Fact_Transaction(date_key, iforest_daily_rank) WHERE iforest_daily_rank IS NOT NULL;
 CREATE INDEX idx_fact_txn_lof_rank        ON Fact_Transaction(date_key, lof_daily_rank)     WHERE lof_daily_rank IS NOT NULL;
+CREATE INDEX idx_fact_txn_sup_rank        ON Fact_Transaction(date_key, sup_daily_rank)     WHERE sup_daily_rank IS NOT NULL;
 
 COMMIT;
 

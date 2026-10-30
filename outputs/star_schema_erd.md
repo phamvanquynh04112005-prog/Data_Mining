@@ -29,6 +29,10 @@
 
 ## 2. Sơ đồ Thực thể – Liên kết (ERD — Star Schema) (Bước C4)
 
+> **File ảnh PNG độ phân giải cao (300 DPI) phục vụ chèn trực tiếp vào Báo cáo Word & Slide:** `figures/fig04_star_schema_erd.png` (sinh tự động bằng `python sql/run_pipeline.py --erd-only`).
+
+![Star Schema ERD](../figures/fig04_star_schema_erd.png)
+
 ```mermaid
 erDiagram
     Dim_Date ||--o{ Fact_Transaction : "date_key"

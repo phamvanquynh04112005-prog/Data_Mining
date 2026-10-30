@@ -47,7 +47,7 @@ CREATE TABLE stg_raw_transactions (
 );
 
 COMMENT ON TABLE stg_raw_transactions IS
-'Bảng Staging chứa nguyên bản 284.807 dòng x 31 cột từ data/raw/creditcard.csv (sha256: 76274b69...98551a89).';
+'Bảng Staging chứa nguyên bản 284.807 dòng x 31 cột từ data/raw/creditcard.csv (sha256: 76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89).';
 
 COMMENT ON COLUMN stg_raw_transactions.raw_row_id IS
 'Số thứ tự dòng tự tăng (1..284807) theo đúng thứ tự xuất hiện trong file CSV gốc, dùng làm khóa tất định txn_id.';

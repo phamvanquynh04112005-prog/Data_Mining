@@ -220,8 +220,7 @@ INSERT INTO Fact_Transaction (
     lof_score,
     lof_daily_rank,
     sup_prob_score,
-    sup_daily_rank,
-    anomaly_score
+    sup_daily_rank
 )
 SELECT
     d.txn_id,
@@ -250,8 +249,7 @@ SELECT
     m.sup_prob_score,
     CASE WHEN m.sup_prob_score IS NOT NULL THEN
         RANK() OVER (PARTITION BY d.date_key, (m.sup_prob_score IS NOT NULL) ORDER BY m.sup_prob_score DESC, d.txn_id ASC)::INT
-    END AS sup_daily_rank,
-    COALESCE(m.iforest_score, m.lof_score, m.sup_prob_score) AS anomaly_score
+    END AS sup_daily_rank
 FROM dedup_flagged d
 LEFT JOIN stg_model_scores m ON m.txn_id = d.txn_id
 ORDER BY d.txn_id;

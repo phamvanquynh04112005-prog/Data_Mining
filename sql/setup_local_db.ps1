@@ -1,5 +1,10 @@
 # =============================================================================
-# Script setup PostgreSQL 16 Local on Windows for Data Mining Project
+# Script setup PostgreSQL Local on Windows for Data Mining Project
+# WARNING / CANH BAO BAO MAT:
+#   CHỈ DÙNG CHO MÁY CÁ NHÂN CỤC BỘ (FOR LOCAL PERSONAL DEV ENVIRONMENT ONLY).
+#   Script nay cau hinh pg_hba.conf o che do 'trust' tren 127.0.0.1/::1 va tao
+#   role 'dm' (NOSUPERUSER, CREATEDB) voi mat khau thu nghiem 'dm'.
+#   TUYET DOI KHONG chay script nay tren may chu Production!
 # Run in PowerShell (Run as Administrator):
 #   powershell -ExecutionPolicy Bypass -File sql\setup_local_db.ps1
 # =============================================================================
@@ -14,8 +19,15 @@ $psql   = Join-Path $pgBin  "psql.exe"
 $pgCtl  = Join-Path $pgBin  "pg_ctl.exe"
 
 if (-not (Test-Path $psql)) {
-    Write-Error "Cannot find psql.exe at $psql. Please check PostgreSQL installation."
-    exit 1
+    $cmd = Get-Command psql -ErrorAction SilentlyContinue
+    if ($cmd) {
+        $psql = $cmd.Source
+        $pgBin = Split-Path -Parent $psql
+        $pgCtl = Join-Path $pgBin "pg_ctl.exe"
+    } else {
+        Write-Error "Cannot find psql.exe. Please install PostgreSQL or add bin directory to PATH."
+        exit 1
+    }
 }
 
 # 1. Add PostgreSQL bin to User PATH if not present
@@ -26,7 +38,7 @@ if ($userPath -notlike "*$pgBin*") {
 }
 $env:Path += ";$pgBin"
 
-# 2. Configure pg_hba.conf for local trust authentication
+# 2. Configure pg_hba.conf for local trust authentication (LOCAL DEV MACHINE ONLY)
 if (Test-Path $pgHba) {
     $backupHba = "$pgHba.bak"
     if (-not (Test-Path $backupHba)) {
@@ -37,15 +49,15 @@ if (Test-Path $pgHba) {
     Set-Content -Path $pgHba -Value $newContent -Encoding ASCII
     & $pgCtl reload -D $pgData | Out-Null
     Start-Sleep -Seconds 1
-    Write-Host "[OK] Reloaded local authentication config (pg_hba.conf)." -ForegroundColor Green
+    Write-Host "[OK] Reloaded local authentication config (pg_hba.conf - LOCAL DEV ONLY)." -ForegroundColor Green
 } else {
-    Write-Warning "Cannot find $pgHba (please run PowerShell as Administrator)."
+    Write-Warning "Cannot find $pgHba (skipping pg_hba.conf edit)."
 }
 
-# 3. Set standard passwords for 'postgres' and 'dm'
-Write-Host "[INFO] Setting up role 'dm' and passwords..." -ForegroundColor Cyan
+# 3. Set standard local dev passwords for 'postgres' and 'dm' (NOSUPERUSER, CREATEDB)
+Write-Host "[INFO] Setting up role 'dm' (NOSUPERUSER, CREATEDB) for local dev..." -ForegroundColor Cyan
 & $psql -U postgres -h localhost -p 5432 -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-& $psql -U postgres -h localhost -p 5432 -c "DO `$`$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'dm') THEN CREATE ROLE dm WITH LOGIN PASSWORD 'dm' SUPERUSER CREATEDB; ELSE ALTER ROLE dm WITH LOGIN PASSWORD 'dm' SUPERUSER CREATEDB; END IF; END `$`$;"
+& $psql -U postgres -h localhost -p 5432 -c "DO `$`$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'dm') THEN CREATE ROLE dm WITH LOGIN PASSWORD 'dm' NOSUPERUSER CREATEDB; ELSE ALTER ROLE dm WITH LOGIN PASSWORD 'dm' NOSUPERUSER CREATEDB; END IF; END `$`$;"
 
 # 4. Create database 'dm_course' if not exists
 $dbExists = & $psql -U postgres -h localhost -p 5432 -tAc "SELECT 1 FROM pg_database WHERE datname = 'dm_course';"

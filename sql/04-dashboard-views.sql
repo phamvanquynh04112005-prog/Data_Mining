@@ -123,10 +123,13 @@ COMMENT ON VIEW vw_dash_03_relative_hour_trend IS
 -- Phục vụ Biểu đồ 4: Hàng đợi Ưu tiên Rà soát Top-100 Giao dịch Mỗi Ngày tương đối
 -- Câu hỏi trả lời: "Danh sách 100 giao dịch ưu tiên cần nhân viên rà soát mỗi ngày
 -- gồm những giao dịch nào và bao nhiêu ca là gian lận thật vs. báo động giả (FP)?"
+-- Lưu ý thiết kế: Tuyệt đối KHÔNG gộp chung thang điểm của Isolation Forest, LOF
+-- và xác suất Supervised bằng COALESCE vì khác thang đo. Mỗi phương pháp được
+-- tách thành phân lớp (phuong_phap_xep_hang) riêng biệt để lọc trên Dashboard.
 -- Grain: 1 dòng = 1 giao dịch nằm trong Top-100 của Ngày tương đối theo từng phương pháp xếp hạng
 -- =============================================================================
 CREATE OR REPLACE VIEW vw_dash_04_top100_review_queue AS
-WITH all_rankings AS (
+WITH base_pca_rank AS (
     SELECT
         f.txn_id,
         f.date_key,
@@ -144,39 +147,135 @@ WITH all_rankings AS (
         f.is_fraud,
         CASE WHEN f.is_fraud = 1 THEN 'Gian lận thật (True Positive)' ELSE 'Khách hợp pháp bị xét (False Positive)' END AS ket_qua_ra_soat,
         COALESCE(f.split_set, 'FULL_WAREHOUSE') AS split_set,
-        -- Xếp hạng theo Điểm mô hình chính (nếu đã nạp từ Huy D) hoặc dùng Unsupervised PCA Max(|V*|) làm mặc định
-        COALESCE(f.iforest_score, f.anomaly_score, f.max_abs_v) AS diem_bat_thuong_chinh,
+        '1. Heuristic PCA: Max(|V1..V28|) [Baseline không cần nạp điểm ML]' AS phuong_phap_xep_hang,
         CASE
-            WHEN f.iforest_score IS NOT NULL THEN 'Isolation Forest (Huy - D)'
-            WHEN f.anomaly_score IS NOT NULL THEN 'Anomaly Score (Tích hợp)'
-            ELSE 'Unsupervised PCA Extreme Max(|V1..V28|)'
-        END AS nguon_diem_xep_hang,
+            WHEN f.iforest_score IS NULL AND f.lof_score IS NULL AND f.sup_prob_score IS NULL
+                THEN 'Chưa có điểm mô hình ML (đang hiển thị Baseline PCA Max|V1..V28|)'
+            ELSE 'Đã có điểm mô hình ML (lọc cột phuong_phap_xep_hang để chuyển mô hình)'
+        END AS trang_thai_diem_mo_hinh,
+        f.max_abs_v AS diem_xep_hang_rieng,
         ROW_NUMBER() OVER (
             PARTITION BY f.date_key
-            ORDER BY COALESCE(f.iforest_score, f.anomaly_score, f.max_abs_v) DESC, f.txn_id ASC
-        ) AS hang_ra_soat_trong_ngay
+            ORDER BY f.max_abs_v DESC, f.txn_id ASC
+        )::INT AS hang_ra_soat_trong_ngay
     FROM Fact_Transaction f
     JOIN Dim_Date d        ON d.date_key = f.date_key
     JOIN Dim_Hour h        ON h.hour_key = f.hour_key
     JOIN Dim_AmountBand ab ON ab.amount_band_key = f.amount_band_key
 )
 SELECT *
-FROM all_rankings
-WHERE hang_ra_soat_trong_ngay <= 100;
+FROM base_pca_rank
+WHERE hang_ra_soat_trong_ngay <= 100
+
+UNION ALL
+
+SELECT
+    f.txn_id,
+    f.date_key,
+    d.rel_day_label,
+    f.hour_key,
+    h.rel_hour_label,
+    ab.band_order,
+    ab.band_code AS dai_so_tien,
+    f.time_sec,
+    f.amount,
+    f.is_zero_amount,
+    f.is_duplicate,
+    f.max_abs_v,
+    f.has_extreme_v_z10,
+    f.is_fraud,
+    CASE WHEN f.is_fraud = 1 THEN 'Gian lận thật (True Positive)' ELSE 'Khách hợp pháp bị xét (False Positive)' END AS ket_qua_ra_soat,
+    COALESCE(f.split_set, 'FULL_WAREHOUSE') AS split_set,
+    '2. Mô hình Isolation Forest (Huy - D)' AS phuong_phap_xep_hang,
+    'Đã nạp điểm mô hình Isolation Forest' AS trang_thai_diem_mo_hinh,
+    f.iforest_score AS diem_xep_hang_rieng,
+    f.iforest_daily_rank AS hang_ra_soat_trong_ngay
+FROM Fact_Transaction f
+JOIN Dim_Date d        ON d.date_key = f.date_key
+JOIN Dim_Hour h        ON h.hour_key = f.hour_key
+JOIN Dim_AmountBand ab ON ab.amount_band_key = f.amount_band_key
+WHERE f.iforest_daily_rank IS NOT NULL AND f.iforest_daily_rank <= 100
+
+UNION ALL
+
+SELECT
+    f.txn_id,
+    f.date_key,
+    d.rel_day_label,
+    f.hour_key,
+    h.rel_hour_label,
+    ab.band_order,
+    ab.band_code AS dai_so_tien,
+    f.time_sec,
+    f.amount,
+    f.is_zero_amount,
+    f.is_duplicate,
+    f.max_abs_v,
+    f.has_extreme_v_z10,
+    f.is_fraud,
+    CASE WHEN f.is_fraud = 1 THEN 'Gian lận thật (True Positive)' ELSE 'Khách hợp pháp bị xét (False Positive)' END AS ket_qua_ra_soat,
+    COALESCE(f.split_set, 'FULL_WAREHOUSE') AS split_set,
+    '3. Mô hình Local Outlier Factor - LOF (Huy - D)' AS phuong_phap_xep_hang,
+    'Đã nạp điểm mô hình LOF' AS trang_thai_diem_mo_hinh,
+    f.lof_score AS diem_xep_hang_rieng,
+    f.lof_daily_rank AS hang_ra_soat_trong_ngay
+FROM Fact_Transaction f
+JOIN Dim_Date d        ON d.date_key = f.date_key
+JOIN Dim_Hour h        ON h.hour_key = f.hour_key
+JOIN Dim_AmountBand ab ON ab.amount_band_key = f.amount_band_key
+WHERE f.lof_daily_rank IS NOT NULL AND f.lof_daily_rank <= 100
+
+UNION ALL
+
+SELECT
+    f.txn_id,
+    f.date_key,
+    d.rel_day_label,
+    f.hour_key,
+    h.rel_hour_label,
+    ab.band_order,
+    ab.band_code AS dai_so_tien,
+    f.time_sec,
+    f.amount,
+    f.is_zero_amount,
+    f.is_duplicate,
+    f.max_abs_v,
+    f.has_extreme_v_z10,
+    f.is_fraud,
+    CASE WHEN f.is_fraud = 1 THEN 'Gian lận thật (True Positive)' ELSE 'Khách hợp pháp bị xét (False Positive)' END AS ket_qua_ra_soat,
+    COALESCE(f.split_set, 'FULL_WAREHOUSE') AS split_set,
+    '4. Mô hình Phân lớp Có giám sát (Mong - E)' AS phuong_phap_xep_hang,
+    'Đã nạp xác suất mô hình có giám sát' AS trang_thai_diem_mo_hinh,
+    f.sup_prob_score AS diem_xep_hang_rieng,
+    f.sup_daily_rank AS hang_ra_soat_trong_ngay
+FROM Fact_Transaction f
+JOIN Dim_Date d        ON d.date_key = f.date_key
+JOIN Dim_Hour h        ON h.hour_key = f.hour_key
+JOIN Dim_AmountBand ab ON ab.amount_band_key = f.amount_band_key
+WHERE f.sup_daily_rank IS NOT NULL AND f.sup_daily_rank <= 100;
 
 COMMENT ON VIEW vw_dash_04_top100_review_queue IS
-'View Dashboard 4: Hàng đợi Top-100 giao dịch rủi ro cao nhất mỗi ngày tương đối (tổng 200 giao dịch cho 2 ngày).';
+'View Dashboard 4: Hàng đợi Top-100 giao dịch rủi ro cao nhất mỗi ngày tương đối, tách riêng từng phương pháp xếp hạng (không trộn thang điểm).';
 
 
 -- =============================================================================
 -- VIEW 5: vw_dash_05_score_distribution
 -- Phục vụ Biểu đồ 5: Phân phối Mức độ Bất thường giữa Giao dịch Thường vs. Gian lận
--- Câu hỏi trả lời: "Điểm bất thường tách biệt nhóm gian lận khỏi nhóm hợp pháp ở ngưỡng nào?"
+-- Câu hỏi trả lời: "Độ lệch cực đại PCA Max(|V1..V28|) tách biệt nhóm gian lận khỏi
+-- nhóm hợp pháp ở ngưỡng nào?"
+-- Lưu ý: Ghi nhãn rõ thang đo là Max(|V1..V28|) từ dữ liệu gốc (không mạo nhận là
+-- điểm mô hình ML khi chưa nạp điểm).
 -- Grain: 1 dòng = 1 Dải mức độ lệch (Score Bucket) x Nhãn (is_fraud) x Ngày tương đối
 -- =============================================================================
 CREATE OR REPLACE VIEW vw_dash_05_score_distribution AS
 WITH bucketed AS (
     SELECT
+        'Thang đo gốc: Max(|V1..V28|) — Chưa dùng điểm mô hình ML' AS loai_thang_do,
+        CASE
+            WHEN f.iforest_score IS NULL AND f.lof_score IS NULL AND f.sup_prob_score IS NULL
+                THEN 'Chưa có điểm mô hình ML (đang hiển thị phân phối Max(|V1..V28|) của dữ liệu gốc)'
+            ELSE 'Đã nạp điểm mô hình ML vào Fact_Transaction'
+        END AS trang_thai_diem_mo_hinh,
         f.date_key,
         d.rel_day_label,
         f.is_fraud,
@@ -204,6 +303,8 @@ WITH bucketed AS (
     JOIN Dim_Date d ON d.date_key = f.date_key
 )
 SELECT
+    loai_thang_do,
+    trang_thai_diem_mo_hinh,
     date_key,
     rel_day_label,
     bucket_order,
@@ -213,17 +314,19 @@ SELECT
     is_duplicate,
     COUNT(*) AS so_giao_dich
 FROM bucketed
-GROUP BY date_key, rel_day_label, bucket_order, dai_muc_bat_thuong, is_fraud, nhom_nhan, is_duplicate;
+GROUP BY
+    loai_thang_do, trang_thai_diem_mo_hinh,
+    date_key, rel_day_label, bucket_order, dai_muc_bat_thuong, is_fraud, nhom_nhan, is_duplicate;
 
 COMMENT ON VIEW vw_dash_05_score_distribution IS
-'View Dashboard 5: Phân phối điểm bất thường theo dải để vẽ biểu đồ Histogram/Bar so sánh lớp 0 và lớp 1.';
+'View Dashboard 5: Phân phối biên độ Max(|V1..V28|) theo dải (ghi nhãn rõ thang đo gốc khi chưa có điểm mô hình ML).';
 
 
 -- =============================================================================
 -- VIEW 6: vw_dash_06_model_vs_baseline_comparison
 -- Phục vụ Biểu đồ 6: So sánh Hiệu năng Mô hình vs. Baseline dưới Ngân sách 100 GD/ngày
--- Câu hỏi trả lời: "Các phương pháp phát hiện bất thường và phân lớp cải thiện
--- Precision@100 và Recall gấp bao nhiêu lần so với Baseline ngẫu nhiên / luật thủ công?"
+-- Câu hỏi trả lời: "Các phương pháp phát hiện bất thường (IForest, LOF) và phân lớp
+-- cải thiện Precision@100 và Recall gấp bao nhiêu lần so với Baseline?"
 -- Grain: 1 dòng = 1 Phương pháp x 1 Ngày tương đối
 -- =============================================================================
 CREATE OR REPLACE VIEW vw_dash_06_model_vs_baseline_comparison AS
@@ -246,6 +349,7 @@ SELECT
     1 AS method_order,
     'Baseline 0: Đoán toàn bộ Không gian lận (Bẫy Accuracy 99.83%)' AS ten_mo_hinh,
     'Baseline' AS ho_bai_toan,
+    'Sẵn sàng (Dữ liệu gốc)' AS trang_thai_du_lieu,
     date_key,
     rel_day_label,
     0 AS so_gd_ra_soat,
@@ -263,6 +367,7 @@ SELECT
     2 AS method_order,
     'Baseline 1: Rà soát ngẫu nhiên 100 GD/ngày (Kỳ vọng)' AS ten_mo_hinh,
     'Baseline' AS ho_bai_toan,
+    'Sẵn sàng (Dữ liệu gốc)' AS trang_thai_du_lieu,
     date_key,
     rel_day_label,
     100 AS so_gd_ra_soat,
@@ -280,6 +385,7 @@ SELECT
     3 AS method_order,
     'Baseline 2: Luật thủ công Top-100 Amount cao nhất/ngày' AS ten_mo_hinh,
     'Baseline (Heuristic)' AS ho_bai_toan,
+    'Sẵn sàng (Dữ liệu gốc)' AS trang_thai_du_lieu,
     date_key,
     rel_day_label,
     100 AS so_gd_ra_soat,
@@ -296,7 +402,8 @@ UNION ALL
 SELECT
     4 AS method_order,
     'Unsupervised Heuristic: Top-100 Max(|V1..V28|) cao nhất/ngày' AS ten_mo_hinh,
-    'Phát hiện bất thường (Không giám sát)' AS ho_bai_toan,
+    'Phát hiện bất thường (Không giám sát - PCA)' AS ho_bai_toan,
+    'Sẵn sàng (Dữ liệu gốc)' AS trang_thai_du_lieu,
     date_key,
     rel_day_label,
     100 AS so_gd_ra_soat,
@@ -311,9 +418,64 @@ GROUP BY date_key, rel_day_label
 UNION ALL
 
 SELECT
+    5 AS method_order,
+    'Mô hình 1: Isolation Forest — Top-100/ngày (Huy - D)' AS ten_mo_hinh,
+    'Phát hiện bất thường (Isolation Forest)' AS ho_bai_toan,
+    CASE WHEN COUNT(iforest_daily_rank) > 0 THEN 'Đã nạp điểm mô hình' ELSE 'Chưa nạp điểm mô hình (chạy 05-load-model-scores.sql)' END AS trang_thai_du_lieu,
+    date_key,
+    rel_day_label,
+    CASE WHEN COUNT(iforest_daily_rank) > 0 THEN 100 ELSE 0 END AS so_gd_ra_soat,
+    COALESCE(SUM(is_fraud) FILTER (WHERE iforest_daily_rank <= 100), 0)::NUMERIC AS so_fraud_bat_duoc,
+    CASE WHEN COUNT(iforest_daily_rank) > 0 THEN (100 - COALESCE(SUM(is_fraud) FILTER (WHERE iforest_daily_rank <= 100), 0))::NUMERIC ELSE 0::NUMERIC END AS so_bao_dong_gia_fp,
+    SUM(is_fraud) AS tong_fraud_ngay,
+    CASE WHEN COUNT(iforest_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE iforest_daily_rank <= 100), 0)::NUMERIC, 2) ELSE NULL END AS precision_at_100_pct,
+    CASE WHEN COUNT(iforest_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE iforest_daily_rank <= 100), 0)::NUMERIC / SUM(is_fraud) * 100, 2) ELSE NULL END AS recall_pct
+FROM ranked
+GROUP BY date_key, rel_day_label
+
+UNION ALL
+
+SELECT
+    6 AS method_order,
+    'Mô hình 2: Local Outlier Factor (LOF) — Top-100/ngày (Huy - D)' AS ten_mo_hinh,
+    'Phát hiện bất thường (LOF)' AS ho_bai_toan,
+    CASE WHEN COUNT(lof_daily_rank) > 0 THEN 'Đã nạp điểm mô hình' ELSE 'Chưa nạp điểm mô hình (chạy 05-load-model-scores.sql)' END AS trang_thai_du_lieu,
+    date_key,
+    rel_day_label,
+    CASE WHEN COUNT(lof_daily_rank) > 0 THEN 100 ELSE 0 END AS so_gd_ra_soat,
+    COALESCE(SUM(is_fraud) FILTER (WHERE lof_daily_rank <= 100), 0)::NUMERIC AS so_fraud_bat_duoc,
+    CASE WHEN COUNT(lof_daily_rank) > 0 THEN (100 - COALESCE(SUM(is_fraud) FILTER (WHERE lof_daily_rank <= 100), 0))::NUMERIC ELSE 0::NUMERIC END AS so_bao_dong_gia_fp,
+    SUM(is_fraud) AS tong_fraud_ngay,
+    CASE WHEN COUNT(lof_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE lof_daily_rank <= 100), 0)::NUMERIC, 2) ELSE NULL END AS precision_at_100_pct,
+    CASE WHEN COUNT(lof_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE lof_daily_rank <= 100), 0)::NUMERIC / SUM(is_fraud) * 100, 2) ELSE NULL END AS recall_pct
+FROM ranked
+GROUP BY date_key, rel_day_label
+
+UNION ALL
+
+SELECT
+    7 AS method_order,
+    'Mô hình 3: Phân lớp Có giám sát — Top-100/ngày (Mong - E)' AS ten_mo_hinh,
+    'Phân lớp có giám sát (Supervised)' AS ho_bai_toan,
+    CASE WHEN COUNT(sup_daily_rank) > 0 THEN 'Đã nạp điểm mô hình' ELSE 'Chưa nạp điểm mô hình (chạy 05-load-model-scores.sql)' END AS trang_thai_du_lieu,
+    date_key,
+    rel_day_label,
+    CASE WHEN COUNT(sup_daily_rank) > 0 THEN 100 ELSE 0 END AS so_gd_ra_soat,
+    COALESCE(SUM(is_fraud) FILTER (WHERE sup_daily_rank <= 100), 0)::NUMERIC AS so_fraud_bat_duoc,
+    CASE WHEN COUNT(sup_daily_rank) > 0 THEN (100 - COALESCE(SUM(is_fraud) FILTER (WHERE sup_daily_rank <= 100), 0))::NUMERIC ELSE 0::NUMERIC END AS so_bao_dong_gia_fp,
+    SUM(is_fraud) AS tong_fraud_ngay,
+    CASE WHEN COUNT(sup_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE sup_daily_rank <= 100), 0)::NUMERIC, 2) ELSE NULL END AS precision_at_100_pct,
+    CASE WHEN COUNT(sup_daily_rank) > 0 THEN ROUND(COALESCE(SUM(is_fraud) FILTER (WHERE sup_daily_rank <= 100), 0)::NUMERIC / SUM(is_fraud) * 100, 2) ELSE NULL END AS recall_pct
+FROM ranked
+GROUP BY date_key, rel_day_label
+
+UNION ALL
+
+SELECT
     9 AS method_order,
     'Trần lý thuyết: Bộ xếp hạng hoàn hảo (Giới hạn ngân sách 100/ngày)' AS ten_mo_hinh,
     'Giới hạn lý thuyết (Ceiling)' AS ho_bai_toan,
+    'Sẵn sàng (Dữ liệu gốc)' AS trang_thai_du_lieu,
     date_key,
     rel_day_label,
     100 AS so_gd_ra_soat,
@@ -326,7 +488,7 @@ FROM ranked
 GROUP BY date_key, rel_day_label;
 
 COMMENT ON VIEW vw_dash_06_model_vs_baseline_comparison IS
-'View Dashboard 6: So sánh trực tiếp Precision@100, Recall và số dương tính giả (FP) giữa các phương pháp và trần lý thuyết.';
+'View Dashboard 6: So sánh trực tiếp Precision@100, Recall và số dương tính giả (FP) giữa các Baseline, 3 Mô hình ML (IForest, LOF, Supervised) và Trần lý thuyết.';
 
 COMMIT;
 

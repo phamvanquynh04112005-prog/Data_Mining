@@ -133,7 +133,12 @@ SELECT
     COUNT(*) AS so_giao_dich,
     SUM(f.is_fraud) AS so_gian_lan,
     ROUND(AVG(f.is_fraud) * 100, 3) AS ty_le_gian_lan_pct,
-    ROUND(SUM(f.is_fraud)::NUMERIC / 492.0 * 100, 2) AS phan_tram_trong_tong_492_fraud
+    ROUND(
+        SUM(f.is_fraud)::NUMERIC
+        / NULLIF(SUM(SUM(f.is_fraud)) FILTER (WHERE GROUPING(f.has_extreme_v_z10) = 1 AND GROUPING(f.is_zero_amount) = 1) OVER (), 0)
+        * 100,
+        2
+    ) AS phan_tram_trong_tong_492_fraud
 FROM Fact_Transaction f
 GROUP BY CUBE (f.has_extreme_v_z10, f.is_zero_amount)
 ORDER BY GROUPING(f.has_extreme_v_z10), f.has_extreme_v_z10 DESC,
