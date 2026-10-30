@@ -108,7 +108,7 @@ $factRows = @(
     @("", "sup_prob_score", "NUMERIC(12,6) (Mong - E)"),
     @("", "sup_daily_rank", "INT (RANK OVER date_key)")
 )
-Draw-TableBox 800 135 800 810 "Fact_Transaction" "FACT TABLE - Grain: 1 dong = 1 giao dich (284.807 dong)" 153 27 27 $factRows
+Draw-TableBox 780 135 840 810 "Fact_Transaction" "FACT TABLE - Grain: 1 dong = 1 giao dich (284.807 dong)" 153 27 27 $factRows
 
 $dimDateRows = @(
     @("PK", "date_key", "INT (0, 1)"),
@@ -119,7 +119,7 @@ $dimDateRows = @(
     @("", "daily_review_budget", "INT DEFAULT 100"),
     @("", "interpretation_note", "VARCHAR(255) (DQ-05)")
 )
-Draw-TableBox 60 150 580 330 "Dim_Date" "DIMENSION - 2 dong (Ngay tuong doi 0 & 1)" 30 58 138 $dimDateRows
+Draw-TableBox 40 150 520 330 "Dim_Date" "DIMENSION - 2 dong (Ngay tuong doi 0 & 1)" 30 58 138 $dimDateRows
 
 $dimHourRows = @(
     @("PK", "hour_key", "INT (0..47)"),
@@ -130,7 +130,7 @@ $dimHourRows = @(
     @("", "end_sec", "INT NOT NULL"),
     @("", "interpretation_note", "VARCHAR(255) (DQ-05)")
 )
-Draw-TableBox 60 600 580 330 "Dim_Hour" "DIMENSION - 48 dong (Gio tuong doi 0..47)" 15 118 110 $dimHourRows
+Draw-TableBox 40 600 520 330 "Dim_Hour" "DIMENSION - 48 dong (Gio tuong doi 0..47)" 15 118 110 $dimHourRows
 
 $dimBandRows = @(
     @("PK", "amount_band_key", "INT (1..7)"),
@@ -142,7 +142,7 @@ $dimBandRows = @(
     @("", "is_upper_inclusive", "BOOLEAN NOT NULL"),
     @("", "band_order", "INT UNIQUE (1..7)")
 )
-Draw-TableBox 1760 150 580 365 "Dim_AmountBand" "DIMENSION - 7 dong (Khop 100% EDA Khang A)" 30 58 138 $dimBandRows
+Draw-TableBox 1840 150 520 365 "Dim_AmountBand" "DIMENSION - 7 dong (Khop 100% EDA Khang A)" 30 58 138 $dimBandRows
 
 $dimChanRows = @(
     @("PK", "channel_key", "INT (1..3)"),
@@ -152,25 +152,25 @@ $dimChanRows = @(
     @("", "allocation_rule", "MOD(ABS(HASHTEXT), 3)"),
     @("", "warning_note", "VARCHAR(255) (DQ-07)")
 )
-Draw-TableBox 1760 600 580 300 "Dim_Channel (SYNTHETIC)" "DIMENSION - 3 dong (Du lieu mo phong DQ-07)" 109 40 217 $dimChanRows
+Draw-TableBox 1840 600 520 300 "Dim_Channel (SYNTHETIC)" "DIMENSION - 3 dong (Du lieu mo phong DQ-07)" 109 40 217 $dimChanRows
 
 $penLine = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(51, 65, 85), 3)
 $penLine.CustomEndCap = New-Object System.Drawing.Drawing2D.AdjustableArrowCap(6, 6)
 
-$g.DrawLine($penLine, 640, 280, 800, 280)
-$g.DrawString("1 : N (date_key)", $fontColBold, $brushFK, 720, 252, $sfCenter)
+$g.DrawLine($penLine, 560, 280, 780, 280)
+$g.DrawString("1 : N (date_key)", $fontColBold, $brushFK, 670, 252, $sfCenter)
 
-$g.DrawLine($penLine, 640, 740, 800, 740)
-$g.DrawString("1 : N (hour_key)", $fontColBold, $brushFK, 720, 712, $sfCenter)
+$g.DrawLine($penLine, 560, 740, 780, 740)
+$g.DrawString("1 : N (hour_key)", $fontColBold, $brushFK, 670, 712, $sfCenter)
 
-$g.DrawLine($penLine, 1760, 280, 1600, 280)
-$g.DrawString("N : 1 (amount_band_key)", $fontColBold, $brushFK, 1680, 252, $sfCenter)
+$g.DrawLine($penLine, 1840, 280, 1620, 280)
+$g.DrawString("N : 1 (amount_band_key)", $fontColBold, $brushFK, 1730, 252, $sfCenter)
 
-$g.DrawLine($penLine, 1760, 740, 1600, 740)
-$g.DrawString("N : 1 (channel_key)", $fontColBold, $brushFK, 1680, 712, $sfCenter)
+$g.DrawLine($penLine, 1840, 740, 1620, 740)
+$g.DrawString("N : 1 (channel_key)", $fontColBold, $brushFK, 1730, 712, $sfCenter)
 
-$g.DrawLine($penLine, 350, 480, 350, 600)
-$g.DrawString("Phan cap 1 Ngay = 24 Gio", $fontColBold, $brushMuted, 360, 530)
+$g.DrawLine($penLine, 300, 480, 300, 600)
+$g.DrawString("Phan cap 1 Ngay = 24 Gio", $fontColBold, $brushMuted, 312, 530)
 
 $rectNote = New-Object System.Drawing.Rectangle(120, 1000, 2160, 130)
 $brushNoteBg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(239, 246, 255))
