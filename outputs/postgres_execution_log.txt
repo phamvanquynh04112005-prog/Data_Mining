@@ -1,0 +1,222 @@
+================================================================================
+LOG THỰC THI THỰC TẾ TRÊN POSTGRESQL 16.15-5 (MÁY CÁ NHÂN CỦA QUỲNH — THÀNH VIÊN C)
+Thời gian chạy: 2026-10-30 10:38:58 +07:00
+Dữ liệu nguồn: data/raw/creditcard.csv (150,828,752 bytes)
+SHA-256: 76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89
+Database: postgresql://dm:dm@localhost:5432/dm_course
+================================================================================
+
+(.venv) PS D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project> powershell -ExecutionPolicy Bypass -File "D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project\sql\run_warehouse.ps1"
+[1/4] Running sql/01-staging.sql (Create Staging & Load creditcard.csv)...
+SET
+BEGIN
+DROP TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+[01-staging] Dang nap 284.807 dong tu data/raw/creditcard.csv vao stg_raw_transactions...
+COPY 284807
+DROP TABLE
+CREATE TABLE
+COMMENT
+COMMIT
+ stg_total_rows | stg_total_fraud                                            
+----------------+-----------------
+         284807 |             492
+(1 row)
+
+
+
+[2/4] Running sql/02-star-schema.sql (Create 4 Dimensions & Fact_Transaction)...
+SET
+BEGIN
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+COMMIT
+
+[3/4] Running sql/03-transform.sql (Populate Warehouse & Reconcile Counts)...
+SET
+BEGIN
+TRUNCATE TABLE
+INSERT 0 2
+INSERT 0 48
+INSERT 0 7
+INSERT 0 3
+INSERT 0 284807
+COMMIT
+ANALYZE
+ANALYZE
+ANALYZE
+ANALYZE
+ANALYZE
+=== BAO CAO DOI SOAT TOAN VEN KHO DU LIEU (BUOC C9) ===
+ stg_rows | fact_rows | total_fraud | total_non_fraud | dup_extra_rows_dq01 | dup_extra_fraud_dq01 | dedup_rows | dedup_fraud | amount_zero_rows_dq02 | amount_zero_fraud_dq02 | extreme_v_z10_rows_dq06 | extreme_v_z10_fraud_dq06 | day0_rows | day0_fraud | day1_rows | day1_fraud 
+----------+-----------+-------------+-----------------+---------------------+----------------------+------------+-------------+-----------------------+------------------------+-------------------------+--------------------------+-----------+------------+-----------+------------
+   284807 |    284807 |         492 |          284315 |                1081 |                   19 |     283726 |         473 |                  1825 |                     27 |                    1924 |                      231 |    144786 |        281 |    140021 |        211
+(1 row)
+
+[4/4] Running sql/05-load-model-scores.sql (Load Model Scores & Update Ranks)...
+SET
+BEGIN
+TRUNCATE TABLE
+[05-load-model-scores] Dang nap outputs/model_scores_warehouse.csv vao stg_model_scores...
+COPY 0
+UPDATE 0
+UPDATE 0
+COMMIT
+ANALYZE
+ANALYZE
+=== BAO CAO DOI SOAT DIEM MO HINH (BUOC C12) ===
+ stg_score_rows | fact_total_rows | rows_with_iforest | iforest_top100_alerts | iforest_caught_fraud | rows_with_lof | lof_top100_alerts | lof_caught_fraud | rows_with_sup_prob | sup_top100_alerts | sup_caught_fraud 
+----------------+-----------------+-------------------+-----------------------+----------------------+---------------+-------------------+------------------+--------------------+-------------------+------------------
+              0 |          284807 |                 0 |                     0 |                      |             0 |                 0 |                  |                  0 |                 0 |                 
+(1 row)
+
+
+(.venv) PS D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project> powershell -ExecutionPolicy Bypass -File "D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project\sql\run_olap_and_views.ps1"
+[1/2] Running sql/04-dashboard-views.sql (Create 6 Dashboard Views for Superset)...
+SET
+BEGIN
+CREATE VIEW
+COMMENT
+CREATE VIEW
+COMMENT
+CREATE VIEW
+COMMENT
+CREATE VIEW
+COMMENT
+CREATE VIEW
+COMMENT
+CREATE VIEW
+COMMENT
+COMMIT
+
+=== VIEWS CREATED IN dm_course ===
+                        List of relations                                    
+ Schema |                  Name                   | Type | Owner 
+--------+-----------------------------------------+------+-------
+ public | vw_dash_01_daily_budget_kpi             | view | dm
+ public | vw_dash_02_amount_band_risk             | view | dm
+ public | vw_dash_03_relative_hour_trend          | view | dm
+ public | vw_dash_04_top100_review_queue          | view | dm
+ public | vw_dash_05_score_distribution           | view | dm
+ public | vw_dash_06_model_vs_baseline_comparison | view | dm
+(6 rows)
+
+
+
+[2/2] Running sql/olap_queries.sql (Execute 5 OLAP Queries: ROLLUP, CUBE, GROUPING SETS, WINDOW)...
+SET
+
+=============================================================================
+OLAP 1 (ROLLUP): Tran ly thuyet ngan sach ra soat 100 giao dich/ngay tuong doi
+=============================================================================
+             pham_vi_ngay              | tong_giao_dich | tong_gian_lan | ty_le_gian_lan_pct | ngan_sach_ra_soat | ty_le_duoc_ra_soat_pct | max_fraud_bat_duoc_raw | tran_recall_raw_pct | gian_lan_sau_khu_trung | tran_recall_dedup_pct 
+---------------------------------------+----------------+---------------+--------------------+-------------------+------------------------+------------------------+---------------------+------------------------+-----------------------
+ Ngày tương đối 0 (0s – 86.399s)       |         144786 |           281 |             0.1941 |               100 |                 0.0691 |                    100 |               35.59 |                    272 |                 36.76
+ Ngày tương đối 1 (86.400s – 172.792s) |         140021 |           211 |             0.1507 |               100 |                 0.0714 |                    100 |               47.39 |                    201 |                 49.75
+ TỔNG CỘNG TOÀN BỘ (2 NGÀY TƯƠNG ĐỐI)  |         284807 |           492 |             0.1727 |               200 |                 0.0702 |                    200 |               40.65 |                    473 |                 42.28
+(3 rows)
+
+
+
+=============================================================================
+OLAP 2 (ROLLUP + WINDOW): Phan tich Gian lan theo Dai Amount & Ngay tuong doi
+=============================================================================
+ dai_so_tien |    ngay_tuong_doi    | so_giao_dich | so_gian_lan | ty_le_gian_lan_pct | ty_trong_tren_tong_492_fraud_pct | hang_rui_ro_dai_tien | tong_tien_gian_lan 
+-------------+----------------------+--------------+-------------+--------------------+----------------------------------+----------------------+--------------------
+ 0           | Cả 2 ngày (Tổng dải) |         1825 |          27 |              1.479 |                             5.49 |                    1 |               0.00
+ 0–10        | Cả 2 ngày (Tổng dải) |        98439 |         222 |              0.226 |                            45.12 |                    4 |             458.90
+ 10–50       | Cả 2 ngày (Tổng dải) |        90781 |          57 |              0.063 |                            11.59 |                    7 |            1615.03
+ 50–100      | Cả 2 ngày (Tổng dải) |        37254 |          56 |              0.150 |                            11.38 |                    6 |            4945.33
+ 100–500     | Cả 2 ngày (Tổng dải) |        47366 |          95 |              0.201 |                            19.31 |                    5 |           21913.81
+ 500–1000    | Cả 2 ngày (Tổng dải) |         6202 |          26 |              0.419 |                             5.28 |                    2 |           17957.57
+ >1000       | Cả 2 ngày (Tổng dải) |         2940 |           9 |              0.306 |                             1.83 |                    3 |           13237.33
+ ALL_BANDS   | Cả 2 ngày (Tổng dải) |       284807 |         492 |              0.173 |                           100.00 |                      |           60127.97
+(8 rows)                                                                     
+
+
+
+=============================================================================
+OLAP 3 (CUBE): Da chieu Kiem chung Cam bay Xoa Outlier (DQ-02 & DQ-06)
+=============================================================================
+          nhom_duoi_nang_pca          |  nhom_amount_zero   | so_giao_dich | so_gian_lan | ty_le_gian_lan_pct | phan_tram_trong_tong_492_fraud 
+--------------------------------------+---------------------+--------------+-------------+--------------------+--------------------------------
+ Có ít nhất 1 V* với |z| > 10 (DQ-06) | Amount = 0 (DQ-02)  |           30 |          16 |             53.333 |                           3.25
+ Có ít nhất 1 V* với |z| > 10 (DQ-06) | Amount > 0          |         1894 |         215 |             11.352 |                          43.70
+ Có ít nhất 1 V* với |z| > 10 (DQ-06) | Tất cả (Mọi Amount) |         1924 |         231 |             12.006 |                          46.95
+ Bình thường (Mọi |z| <= 10)          | Amount = 0 (DQ-02)  |         1795 |          11 |              0.613 |                           2.24
+ Bình thường (Mọi |z| <= 10)          | Amount > 0          |       281088 |         250 |              0.089 |                          50.81
+ Bình thường (Mọi |z| <= 10)          | Tất cả (Mọi Amount) |       282883 |         261 |              0.092 |                          53.05 
+ Tất cả (Mọi mức |z|)                 | Amount = 0 (DQ-02)  |         1825 |          27 |              1.479 |                           5.49
+ Tất cả (Mọi mức |z|)                 | Amount > 0          |       282982 |         465 |              0.164 |                          94.51
+ Tất cả (Mọi mức |z|)                 | Tất cả (Mọi Amount) |       284807 |         492 |              0.173 |                         100.00
+(9 rows)
+
+
+
+=============================================================================
+OLAP 4 (WINDOW FUNCTIONS): Top 10 Gio tuong doi co ty le gian lan cao nhat
+=============================================================================
+ gio_tuong_doi | ngay_tuong_doi | gio_chu_ky_24h | so_giao_dich | so_gian_lan | ty_le_gian_lan_pct | trung_binh_truot_3h_fraud | thay_doi_so_voi_gio_truoc | gian_lan_tich_luy | hang_ty_le_gian_lan 
+---------------+----------------+----------------+--------------+-------------+--------------------+---------------------------+---------------------------+-------------------+---------------------
+            26 |              1 |              2 |         1752 |          36 |              2.055 |                     16.00 |                        28 |               329 |                   1
+            28 |              1 |              4 |         1127 |          17 |              1.508 |                      7.00 |                        13 |               350 |                   2
+             2 |              0 |              2 |         1576 |          21 |              1.332 |                     12.00 |                        19 |                25 |                   3
+             3 |              0 |              3 |         1821 |          13 |              0.714 |                     13.33 |                        -8 |                38 |                   4
+             7 |              0 |              7 |         3368 |          23 |              0.683 |                     10.33 |                        20 |                81 |                   5
+             5 |              0 |              5 |         1681 |          11 |              0.654 |                      6.67 |                         5 |                55 |                   6
+             4 |              0 |              4 |         1082 |           6 |              0.555 |                     10.00 |                        -7 |                44 |                   7
+            11 |              0 |             11 |         8517 |          43 |              0.505 |                     18.00 |                        41 |               146 |                   8
+            25 |              1 |              1 |         2003 |           8 |              0.399 |                     16.00 |                         4 |               293 |                   9
+            23 |              0 |             23 |         6082 |          17 |              0.280 |                      8.00 |                        14 |               281 |                  10
+(10 rows)
+
+
+
+=============================================================================
+OLAP 5 (WINDOW RANKING @100/NGAY): Danh gia Baseline tren Ngan sach 100/ngay
+=============================================================================
+                           phuong_phap                           |            pham_vi             | ngan_sach_ra_soat | fraud_bat_duoc | duong_tinh_gia_fp | precision_at_k_pct | recall_pct | hieu_suat_so_voi_tran_pct 
+-----------------------------------------------------------------+--------------------------------+-------------------+----------------+-------------------+--------------------+------------+---------------------------
+ 1. Baseline: Đoán ngẫu nhiên 100 GD/ngày (Kỳ vọng lý thuyết)    | Ngày tương đối 0               |               100 |           0.19 |             99.81 |               0.19 |       0.07 |                      0.19
+ 1. Baseline: Đoán ngẫu nhiên 100 GD/ngày (Kỳ vọng lý thuyết)    | Ngày tương đối 1               |               100 |           0.15 |             99.85 |               0.15 |       0.07 |                      0.15
+ 1. Baseline: Đoán ngẫu nhiên 100 GD/ngày (Kỳ vọng lý thuyết)    | TỔNG 2 NGÀY (Ngân sách 200 GD) |               200 |           0.34 |            199.66 |               0.17 |       0.07 |                      0.17
+ 2. Baseline Rule: Rà soát Top-100 Amount cao nhất/ngày          | Ngày tương đối 0               |               100 |              0 |               100 |               0.00 |       0.00 |                      0.00
+ 2. Baseline Rule: Rà soát Top-100 Amount cao nhất/ngày          | Ngày tương đối 1               |               100 |              0 |               100 |               0.00 |       0.00 |                      0.00
+ 2. Baseline Rule: Rà soát Top-100 Amount cao nhất/ngày          | TỔNG 2 NGÀY (Ngân sách 200 GD) |               200 |              0 |               200 |               0.00 |       0.00 |                      0.00
+ 3. Unsupervised Heuristic: Top-100 Max(|V1..V28|) cao nhất/ngày | Ngày tương đối 0               |               100 |             23 |                77 |              23.00 |       8.19 |                     23.00
+ 3. Unsupervised Heuristic: Top-100 Max(|V1..V28|) cao nhất/ngày | Ngày tương đối 1               |               100 |             12 |                88 |              12.00 |       5.69 |                     12.00
+ 3. Unsupervised Heuristic: Top-100 Max(|V1..V28|) cao nhất/ngày | TỔNG 2 NGÀY (Ngân sách 200 GD) |               200 |             35 |               165 |              17.50 |       7.11 |                     17.50
+(9 rows)
+
+
+
+[DONE] OLAP Queries and Dashboard Views executed successfully!
+
