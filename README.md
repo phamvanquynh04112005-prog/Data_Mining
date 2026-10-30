@@ -5,7 +5,11 @@
 ## Cấu trúc thư mục
 ```
 data/raw/creditcard.csv     <- tự đặt vào (KHÔNG commit; xem outputs/license_evidence.md)
-notebooks/01_data_audit.ipynb
+data/processed/transactions_processed.csv <- sinh bởi src/preprocessing.py hoặc 02_preprocessing.ipynb (KHÔNG commit)
+src/preprocessing.py        <- Phần B (Cường): Module tiền xử lý & hợp đồng dữ liệu dùng chung
+notebooks/
+  ├── 01_data_audit.ipynb   <- Phần A (Khang): Audit & chất lượng dữ liệu
+  └── 02_preprocessing.ipynb<- Phần B (Cường): Tiền xử lý, biến đổi, kiểm tra rò rỉ & decision log
 sql/                        <- Phần C (Quỳnh): PostgreSQL Staging, Star Schema, Transform, OLAP & Superset Views
   ├── setup_local_db.ps1    <- Script khởi tạo DB cục bộ trên Windows (CHỈ DÙNG CHO MÁY CÁ NHÂN)
   ├── 01-staging.sql
@@ -18,9 +22,10 @@ sql/                        <- Phần C (Quỳnh): PostgreSQL Staging, Star Sche
   ├── run_olap_and_views.ps1<- Runner PowerShell (04 -> olap_queries)
   ├── run_all.sh            <- Runner Bash cho Linux / macOS / WSL
   └── run_pipeline.py       <- Runner Python đa nền tảng + Sinh ảnh ERD PNG 300 DPI
-outputs/                    <- data_audit_summary.md, star_schema_erd.md, warehouse_validation_report.md,
+outputs/                    <- data_audit_summary.md, decision_log.csv, processed_data_dictionary.md,
+                               star_schema_erd.md, warehouse_validation_report.md,
                                olap_and_handover_summary.md, postgres_execution_log.txt, model_scores_warehouse.csv, ...
-figures/                    <- fig01..03 (EDA Phần A), fig04_star_schema_erd.png (ERD Phần C)
+figures/                    <- fig01..03 (EDA Phần A), fig04_amount_transform.png (Phần B), fig04_star_schema_erd.png (ERD Phần C)
 ```
 
 ## 1. Chạy lại Phần A (Khang — Dữ liệu & Audit)
@@ -30,6 +35,20 @@ pip install -r requirements.txt
 cd notebooks && jupyter lab        # mở 01_data_audit.ipynb → Kernel > Restart & Run All
 ```
 Kết quả đúng khi: `sha256` in ở §1 là `76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89`, shape = `(284807, 31)`, fraud = `492`, và ô cuối in `"OK — checksum raw không đổi"`.
+
+## 1b. Chạy lại Phần B (Cường — Tiền xử lý, Biến đổi, Kiểm tra rò rỉ & Nhật ký quyết định)
+```bash
+# Cách 1: Sinh nhanh file CSV đã xử lý (data/processed/transactions_processed.csv)
+python src/preprocessing.py
+
+# Cách 2: Chạy toàn bộ notebook kèm biểu đồ, kiểm tra rò rỉ và sinh decision_log.csv
+cd notebooks && jupyter lab        # mở 02_preprocessing.ipynb → Kernel > Restart & Run All
+```
+Kết quả đúng khi:
+- `data/processed/transactions_processed.csv` có shape = `(284807, 47)`, `sha256 = e8bf7dcde41cb325482455a040154389dd57d7764fa44d72816dbcbe93628958`.
+- Tập mô hình sau khi gắn cờ `1,081` bản sao thừa (`in_model_set = 1`) có đúng **`283,726`** dòng, **`473`** gian lận.
+- Ô cuối của `02_preprocessing.ipynb` in `"OK — checksum raw không đổi"`, `leakage checks đạt: True` (15/15), `post checks đạt: True`.
+- Chi tiết toàn bộ công việc và tiến độ của Phần B xem tại `cuong_work.md`, `outputs/decision_log.csv` và `outputs/processed_data_dictionary.md`.
 
 ## 2. Chạy lại Phần C (Quỳnh — Kho dữ liệu PostgreSQL, Star Schema & OLAP)
 Yêu cầu: Đã cài đặt **PostgreSQL 16** tại máy local (`localhost:5432`, database `dm_course`, user `dm`) và có file `data/raw/creditcard.csv`.
