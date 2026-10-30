@@ -135,7 +135,7 @@ SELECT
     ROUND(AVG(f.is_fraud) * 100, 3) AS ty_le_gian_lan_pct,
     ROUND(
         SUM(f.is_fraud)::NUMERIC
-        / NULLIF(SUM(SUM(f.is_fraud)) FILTER (WHERE GROUPING(f.has_extreme_v_z10) = 1 AND GROUPING(f.is_zero_amount) = 1) OVER (), 0)
+        / NULLIF(MAX(SUM(f.is_fraud)) OVER (), 0)
         * 100,
         2
     ) AS phan_tram_trong_tong_492_fraud
