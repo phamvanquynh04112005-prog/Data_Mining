@@ -3,7 +3,9 @@
 -- Nguồn: bảng public.classification_scores_test (database "examples"), nạp bằng
 --   "Upload CSV to database" từ outputs/classification_scores_test.csv (tạo bởi notebook 04).
 -- Bảng public.classification_results nạp từ outputs/classification_results.csv.
--- Lưu ý: số liệu dưới đây thuộc giao thức ĐỀ XUẤT (test = ngày 1), chưa được nhóm chốt.
+-- Lưu ý: Đã đồng bộ với chuẩn tiền xử lý của Cường (Phần B) và kho dữ liệu của Quỳnh (Phần C).
+-- Trên tập Test Ngày 1 sau khử trùng DQ-01 (139.490 dòng, 201 gian lận) cũng như bản gốc trước khử trùng
+-- (140.021 dòng, 211 gian lận), số giao dịch gian lận bắt được trong Top 100 của Random Forest đều bằng 93.
 
 -- =====================================================================
 -- 1) Dataset ảo "rf_score_bins": phân bố điểm Random Forest theo nhãn thực (20 dải).
