@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0",
+  "file": "data/processed/transactions_processed.csv",
+  "sha256": "e8bf7dcde41cb325482455a040154389dd57d7764fa44d72816dbcbe93628958",
+  "grain": "1 row = 1 transaction",
+  "columns": [
+    {
+      "name": "txn_id",
+      "dtype": "int64"
+    },
+    {
+      "name": "time_sec",
+      "dtype": "int64"
+    },
+    {
+      "name": "rel_day",
+      "dtype": "int64"
+    },
+    {
+      "name": "rel_hour",
+      "dtype": "int64"
+    },
+    {
+      "name": "hour_of_cycle",
+      "dtype": "int64"
+    },
+    {
+      "name": "hour_cycle_sin",
+      "dtype": "float64"
+    },
+    {
+      "name": "hour_cycle_cos",
+      "dtype": "float64"
+    },
+    {
+      "name": "amount",
+      "dtype": "float64"
+    },
+    {
+      "name": "amount_log1p",
+      "dtype": "float64"
+    },
+    {
+      "name": "amount_band_id",
+      "dtype": "int64"
+    },
+    {
+      "name": "amount_band",
+      "dtype": "str"
+    },
+    {
+      "name": "is_zero_amount",
+      "dtype": "int64"
+    },
+    {
+      "name": "V1",
+      "dtype": "float64"
+    },
+    {
+      "name": "V2",
+      "dtype": "float64"
+    },
+    {
+      "name": "V3",
+      "dtype": "float64"
+    },
+    {
+      "name": "V4",
+      "dtype": "float64"
+    },
+    {
+      "name": "V5",
+      "dtype": "float64"
+    },
+    {
+      "name": "V6",
+      "dtype": "float64"
+    },
+    {
+      "name": "V7",
+      "dtype": "float64"
+    },
+    {
+      "name": "V8",
+      "dtype": "float64"
+    },
+    {
+      "name": "V9",
+      "dtype": "float64"
+    },
+    {
+      "name": "V10",
+      "dtype": "float64"
+    },
+    {
+      "name": "V11",
+      "dtype": "float64"
+    },
+    {
+      "name": "V12",
+      "dtype": "float64"
+    },
+    {
+      "name": "V13",
+      "dtype": "float64"
+    },
+    {
+      "name": "V14",
+      "dtype": "float64"
+    },
+    {
+      "name": "V15",
+      "dtype": "float64"
+    },
+    {
+      "name": "V16",
+      "dtype": "float64"
+    },
+    {
+      "name": "V17",
+      "dtype": "float64"
+    },
+    {
+      "name": "V18",
+      "dtype": "float64"
+    },
+    {
+      "name": "V19",
+      "dtype": "float64"
+    },
+    {
+      "name": "V20",
+      "dtype": "float64"
+    },
+    {
+      "name": "V21",
+      "dtype": "float64"
+    },
+    {
+      "name": "V22",
+      "dtype": "float64"
+    },
+    {
+      "name": "V23",
+      "dtype": "float64"
+    },
+    {
+      "name": "V24",
+      "dtype": "float64"
+    },
+    {
+      "name": "V25",
+      "dtype": "float64"
+    },
+    {
+      "name": "V26",
+      "dtype": "float64"
+    },
+    {
+      "name": "V27",
+      "dtype": "float64"
+    },
+    {
+      "name": "V28",
+      "dtype": "float64"
+    },
+    {
+      "name": "is_fraud",
+      "dtype": "int64"
+    },
+    {
+      "name": "is_duplicate",
+      "dtype": "int64"
+    },
+    {
+      "name": "dup_of_txn_id",
+      "dtype": "int64"
+    },
+    {
+      "name": "in_model_set",
+      "dtype": "int64"
+    },
+    {
+      "name": "split_temporal",
+      "dtype": "str"
+    },
+    {
+      "name": "split_random",
+      "dtype": "str"
+    },
+    {
+      "name": "cv_fold",
+      "dtype": "int64"
+    }
+  ],
+  "primary_key": "txn_id",
+  "label": "is_fraud",
+  "features_default": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "amount_log1p"
+  ],
+  "features_with_cycle": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "amount_log1p",
+    "hour_cycle_sin",
+    "hour_cycle_cos"
+  ],
+  "random_state": 42,
+  "split_columns": [
+    "split_temporal",
+    "split_random",
+    "cv_fold"
+  ],
+  "excluded_value": "excluded_duplicate"
+}
