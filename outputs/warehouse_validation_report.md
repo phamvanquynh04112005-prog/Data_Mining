@@ -32,6 +32,10 @@
 | Gian lận Ngày tương đối 0 (`date_key = 0`) | 281 | **281** | 0 | ✓ Khớp tuyệt đối |
 | Giao dịch Ngày tương đối 1 (`date_key = 1`) | 140 021 | **140 021** | 0 | ✓ Khớp tuyệt đối |
 | Gian lận Ngày tương đối 1 (`date_key = 1`) | 211 | **211** | 0 | ✓ Khớp tuyệt đối |
+| Số dòng điểm mô hình nạp vào `stg_model_scores` (Tập Test Ngày 1 sau khử trùng) | 139 490 | **139 490** | 0 | ✓ Khớp tuyệt đối |
+| Gian lận bắt được trong Top-100 Ngày 1 (`iforest_caught_fraud` — Huy D) | 31 | **31** | 0 | ✓ Khớp tuyệt đối |
+| Gian lận bắt được trong Top-100 Ngày 1 (`lof_caught_fraud` — Huy D) | 30 | **30** | 0 | ✓ Khớp tuyệt đối |
+| Gian lận bắt được trong Top-100 Ngày 1 (`sup_caught_fraud` — Mong E) | 93 | **93** | 0 | ✓ Khớp tuyệt đối |
 
 ---
 
@@ -66,3 +70,19 @@ ANALYZE
 (1 row)
 ```
 
+### Đối soát Điểm Mô hình (Bước C12 — `sql/05-load-model-scores.sql`)
+```text
+[4/4] Running sql/05-load-model-scores.sql (Load Model Scores & Update Ranks)...
+TRUNCATE TABLE
+[05-load-model-scores] Dang nap outputs/model_scores_warehouse.csv vao stg_model_scores...
+COPY 139490
+UPDATE 0
+UPDATE 139490
+COMMIT
+ANALYZE
+=== BAO CAO DOI SOAT DIEM MO HINH (BUOC C12) ===
+ stg_score_rows | fact_total_rows | rows_with_iforest | iforest_top100_alerts | iforest_caught_fraud | rows_with_lof | lof_top100_alerts | lof_caught_fraud | rows_with_sup_prob | sup_top100_alerts | sup_caught_fraud 
+----------------+-----------------+-------------------+-----------------------+----------------------+---------------+-------------------+------------------+--------------------+-------------------+------------------
+         139490 |          284807 |            139490 |                   100 |                   31 |        139490 |               100 |               30 |             139490 |               100 |               93
+(1 row)
+```

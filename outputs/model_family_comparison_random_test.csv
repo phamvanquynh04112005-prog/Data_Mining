@@ -1,0 +1,7 @@
+family,model,PR_AUC,Precision@100,Recall@100,TP,FP,FN,config
+Supervised (Mong - E),random_forest,0.8096830253717595,0.77,0.8105263157894737,77.0,23.0,18.0,"{""n_estimators"": 200, ""min_samples_leaf"": 1}"
+Supervised (Mong - E),hist_gb,0.7683321063302222,0.72,0.7578947368421053,72.0,28.0,23.0,"{""max_depth"": 6, ""learning_rate"": 0.05}"
+Supervised (Mong - E),logreg,0.677266508747798,0.74,0.7789473684210526,74.0,26.0,21.0,"{""C"": 0.1}"
+Unsupervised Anomaly (Huy - D),LOF (n_neighbors=100),0.3124621602801068,0.38,0.4,38.0,62.0,57.0,Huy notebook 03
+Unsupervised Anomaly (Huy - D),Isolation Forest,0.16094452562048275,0.27,0.28421052631578947,27.0,73.0,68.0,Huy notebook 03
+Baseline,random_baseline_mean,0.0018717437923126154,0.0026,0.0027368421052631573,0.26,99.74,94.74,100 runs
