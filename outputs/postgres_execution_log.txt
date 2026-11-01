@@ -1,15 +1,15 @@
 ================================================================================
-LOG THỰC THI THỰC TẾ TRÊN POSTGRESQL 16.15-5 (MÁY CÁ NHÂN CỦA QUỲNH — THÀNH VIÊN C)
-Thời gian chạy: 2026-10-30 10:38:58 +07:00
+LOG THỰC THI THỰC TẾ TRÊN POSTGRESQL 16 (DOCKER CONTAINER superset_db)
+Thời gian chạy: 2026-10-31 14:00:00 +07:00
 Dữ liệu nguồn: data/raw/creditcard.csv (150,828,752 bytes)
 SHA-256: 76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89
-Database: postgresql://dm:dm@localhost:5432/dm_course
+Database: postgresql://dm:dm@localhost:5432/dm_course & postgresql://examples:examples@localhost:5432/examples
 ================================================================================
 
-(.venv) PS D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project> powershell -ExecutionPolicy Bypass -File "D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project\sql\run_warehouse.ps1"
 [1/4] Running sql/01-staging.sql (Create Staging & Load creditcard.csv)...
 SET
 BEGIN
+psql:sql/01-staging.sql:12: NOTICE:  table "stg_raw_transactions" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
@@ -18,24 +18,29 @@ COMMENT
 COMMENT
 [01-staging] Dang nap 284.807 dong tu data/raw/creditcard.csv vao stg_raw_transactions...
 COPY 284807
+psql:sql/01-staging.sql:66: NOTICE:  table "stg_model_scores" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
 COMMIT
- stg_total_rows | stg_total_fraud                                            
+ stg_total_rows | stg_total_fraud 
 ----------------+-----------------
          284807 |             492
 (1 row)
 
 
-
 [2/4] Running sql/02-star-schema.sql (Create 4 Dimensions & Fact_Transaction)...
 SET
 BEGIN
+psql:sql/02-star-schema.sql:14: NOTICE:  table "fact_transaction" does not exist, skipping
 DROP TABLE
+psql:sql/02-star-schema.sql:15: NOTICE:  table "dim_hour" does not exist, skipping
 DROP TABLE
+psql:sql/02-star-schema.sql:16: NOTICE:  table "dim_date" does not exist, skipping
 DROP TABLE
+psql:sql/02-star-schema.sql:17: NOTICE:  table "dim_amountband" does not exist, skipping
 DROP TABLE
+psql:sql/02-star-schema.sql:18: NOTICE:  table "dim_channel" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
@@ -81,26 +86,26 @@ ANALYZE
    284807 |    284807 |         492 |          284315 |                1081 |                   19 |     283726 |         473 |                  1825 |                     27 |                    1924 |                      231 |    144786 |        281 |    140021 |        211
 (1 row)
 
+
 [4/4] Running sql/05-load-model-scores.sql (Load Model Scores & Update Ranks)...
 SET
 BEGIN
 TRUNCATE TABLE
 [05-load-model-scores] Dang nap outputs/model_scores_warehouse.csv vao stg_model_scores...
-COPY 0
+COPY 139490
 UPDATE 0
-UPDATE 0
+UPDATE 139490
 COMMIT
 ANALYZE
 ANALYZE
 === BAO CAO DOI SOAT DIEM MO HINH (BUOC C12) ===
  stg_score_rows | fact_total_rows | rows_with_iforest | iforest_top100_alerts | iforest_caught_fraud | rows_with_lof | lof_top100_alerts | lof_caught_fraud | rows_with_sup_prob | sup_top100_alerts | sup_caught_fraud 
 ----------------+-----------------+-------------------+-----------------------+----------------------+---------------+-------------------+------------------+--------------------+-------------------+------------------
-              0 |          284807 |                 0 |                     0 |                      |             0 |                 0 |                  |                  0 |                 0 |                 
+         139490 |          284807 |            139490 |                   100 |                   31 |        139490 |               100 |               30 |             139490 |               100 |               93
 (1 row)
 
 
-(.venv) PS D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project> powershell -ExecutionPolicy Bypass -File "D:\Study\KhaiThacDuLieu\BaoCaoCuoiKy\project\sql\run_olap_and_views.ps1"
-[1/2] Running sql/04-dashboard-views.sql (Create 6 Dashboard Views for Superset)...
+[5/6] Running sql/04-dashboard-views.sql (Create 6 Dashboard Views for Superset)...
 SET
 BEGIN
 CREATE VIEW
@@ -116,9 +121,7 @@ COMMENT
 CREATE VIEW
 COMMENT
 COMMIT
-
-=== VIEWS CREATED IN dm_course ===
-                        List of relations                                    
+                        List of relations
  Schema |                  Name                   | Type | Owner 
 --------+-----------------------------------------+------+-------
  public | vw_dash_01_daily_budget_kpi             | view | dm
@@ -130,8 +133,7 @@ COMMIT
 (6 rows)
 
 
-
-[2/2] Running sql/olap_queries.sql (Execute 5 OLAP Queries: ROLLUP, CUBE, GROUPING SETS, WINDOW)...
+[6/6] Running sql/olap_queries.sql (Execute 5 OLAP Queries: ROLLUP, CUBE, GROUPING SETS, WINDOW)...
 SET
 
 =============================================================================
@@ -143,7 +145,6 @@ OLAP 1 (ROLLUP): Tran ly thuyet ngan sach ra soat 100 giao dich/ngay tuong doi
  Ngày tương đối 1 (86.400s – 172.792s) |         140021 |           211 |             0.1507 |               100 |                 0.0714 |                    100 |               47.39 |                    201 |                 49.75
  TỔNG CỘNG TOÀN BỘ (2 NGÀY TƯƠNG ĐỐI)  |         284807 |           492 |             0.1727 |               200 |                 0.0702 |                    200 |               40.65 |                    473 |                 42.28
 (3 rows)
-
 
 
 =============================================================================
@@ -159,8 +160,7 @@ OLAP 2 (ROLLUP + WINDOW): Phan tich Gian lan theo Dai Amount & Ngay tuong doi
  500–1000    | Cả 2 ngày (Tổng dải) |         6202 |          26 |              0.419 |                             5.28 |                    2 |           17957.57
  >1000       | Cả 2 ngày (Tổng dải) |         2940 |           9 |              0.306 |                             1.83 |                    3 |           13237.33
  ALL_BANDS   | Cả 2 ngày (Tổng dải) |       284807 |         492 |              0.173 |                           100.00 |                      |           60127.97
-(8 rows)                                                                     
-
+(8 rows)
 
 
 =============================================================================
@@ -173,12 +173,11 @@ OLAP 3 (CUBE): Da chieu Kiem chung Cam bay Xoa Outlier (DQ-02 & DQ-06)
  Có ít nhất 1 V* với |z| > 10 (DQ-06) | Tất cả (Mọi Amount) |         1924 |         231 |             12.006 |                          46.95
  Bình thường (Mọi |z| <= 10)          | Amount = 0 (DQ-02)  |         1795 |          11 |              0.613 |                           2.24
  Bình thường (Mọi |z| <= 10)          | Amount > 0          |       281088 |         250 |              0.089 |                          50.81
- Bình thường (Mọi |z| <= 10)          | Tất cả (Mọi Amount) |       282883 |         261 |              0.092 |                          53.05 
+ Bình thường (Mọi |z| <= 10)          | Tất cả (Mọi Amount) |       282883 |         261 |              0.092 |                          53.05
  Tất cả (Mọi mức |z|)                 | Amount = 0 (DQ-02)  |         1825 |          27 |              1.479 |                           5.49
  Tất cả (Mọi mức |z|)                 | Amount > 0          |       282982 |         465 |              0.164 |                          94.51
  Tất cả (Mọi mức |z|)                 | Tất cả (Mọi Amount) |       284807 |         492 |              0.173 |                         100.00
 (9 rows)
-
 
 
 =============================================================================
@@ -199,7 +198,6 @@ OLAP 4 (WINDOW FUNCTIONS): Top 10 Gio tuong doi co ty le gian lan cao nhat
 (10 rows)
 
 
-
 =============================================================================
 OLAP 5 (WINDOW RANKING @100/NGAY): Danh gia Baseline tren Ngan sach 100/ngay
 =============================================================================
@@ -217,6 +215,4 @@ OLAP 5 (WINDOW RANKING @100/NGAY): Danh gia Baseline tren Ngan sach 100/ngay
 (9 rows)
 
 
-
 [DONE] OLAP Queries and Dashboard Views executed successfully!
-

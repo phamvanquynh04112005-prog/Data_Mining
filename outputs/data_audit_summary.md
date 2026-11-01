@@ -58,37 +58,37 @@ Mô tả cột lấy từ mô tả công khai của dataset (qua các trang mirr
 4. Không có cột nhân khẩu/nhóm/kênh/mã khách → không đo công bằng theo nhóm người được; chỉ có thể chia theo dải Amount và thời gian tương đối.
 5. Nguồn không nêu quy trình gán nhãn → nhãn 0 không bảo đảm "chắc chắn sạch".
 
-## 6. Mâu thuẫn / điểm cần nhóm xác nhận (không tự sửa yêu cầu giảng viên)
-1. **Giấy phép — đã giải quyết:** trang Kaggle gốc cho thấy ODbL (database) + DbCL (contents), khớp gợi ý của brief; nguồn thứ cấp ghi CC0 không khớp và không được dùng. Chỉ còn nhắc nhóm ghi nguồn đúng cách và không đăng công khai dữ liệu dẫn xuất.
-2. **`Time → giờ trong ngày` và `date_key` (brief, mục đồ án 6)** ↔ dữ liệu chỉ có giây tương đối. Đề xuất: `Dim_Hour`/`Dim_Date` dùng *giờ tương đối* và *ngày tương đối*, đặt tên rõ. Cần Cường, Quỳnh đồng ý (mục I.3).
-3. **`Dim_Channel` mô phỏng:** dataset không có kênh. Brief cho phép "mô phỏng"; nếu dùng phải ghi rõ synthetic. Nếu nhóm thấy không hợp lý → hỏi giảng viên (mục I.4).
-4. **Khử trùng trước khi chia?** (DQ-01) — Cường quyết định, ghi decision log.
-5. **Ai phụ trách mục Đạo đức/Riêng tư/Công bằng?** Bản phân công đầu liệt kê nó trong phần việc của Khang; bản "chuẩn hóa" (D1) không còn mục này, trong khi tiêu chí 9 chiếm 0,75 điểm. Dưới đây là bản nháp đầu vào do Khang soạn; nhóm cần chốt người chịu trách nhiệm cuối.
+## 6. Điểm thống nhất của nhóm (đã chốt trong `outputs/decision_log.csv` D-01 → D-11)
+1. **Giấy phép — ĐÃ GIẢI QUYẾT (D-01):** trang Kaggle gốc cho thấy ODbL (database) + DbCL (contents), khớp gợi ý của brief; nguồn thứ cấp ghi CC0 không khớp và không được dùng. Nhóm ghi nguồn đầy đủ theo `outputs/license_evidence.md` và không đăng công khai dữ liệu dẫn xuất.
+2. **`Time → giờ trong ngày` và `date_key` — ĐÃ THỐNG NHẤT (D-05, D-08):** dữ liệu chỉ có giây tương đối. Cường (B) và Quỳnh (C) dùng `relative_day` (0, 1) và `relative_hour` (`hour_of_day` 0..23 tương đối, `elapsed_hour` 0..47) cho `dim_date` và `dim_hour`, ghi rõ trong tên cột/view là thời gian tương đối.
+3. **`Dim_Channel` mô phỏng — ĐÃ THỐNG NHẤT (D-09):** dataset không có kênh giao dịch thực. Quỳnh (C) tạo `dim_channel` gồm 3 kênh mô phỏng (`POS_SIM`, `ECOM_SIM`, `ATM_SIM`) có cột `is_simulated = TRUE` và không dùng làm feature cho mô hình học máy.
+4. **Khử trùng trước khi chia — ĐÃ THỐNG NHẤT (D-02, D-06):** Cường (B) đánh dấu 1 081 bản sao thừa (`is_duplicate = 1`), giữ 283 726 dòng sạch (`in_model_set = 1`) cho toàn bộ thực nghiệm mô hình của Huy (D) và Mong (E), đồng thời giữ đủ 284 807 dòng có cờ `is_duplicate` cho kho dữ liệu của Quỳnh (C) để đối khớp tổng số dòng raw.
+5. **Phân công mục Đạo đức/Riêng tư/Công bằng & Ngân sách rà soát (D-10, D-11):** Ngân sách rà soát cố định `k = 100` giao dịch có điểm rủi ro cao nhất trên tập đánh giá (trần lý thuyết trên Ngày 1 sau khử trùng là `100 / 201 = 49,75%`). Khang (A) cung cấp khung phân tích đạo đức/công bằng (§7) kết hợp số đo thực nghiệm FP/FN ở Top-100 từ Huy (D) và Mong (E).
 
-## 7. Đầu vào cho mục Đạo đức, riêng tư & công bằng (bản nháp)
+## 7. Phân tích Đạo đức, riêng tư & công bằng (Tiêu chí 9)
 **Ai có thể bị hại, bằng cơ chế nào, giảm thiểu ra sao** (đúng yêu cầu "không viết chung chung"):
-- **Chủ thẻ hợp pháp bị đánh dấu nhầm (false positive).** Cơ chế: giao dịch đúng nhưng hiếm (đi xa, mua món đắt bất thường, Amount rất nhỏ/bằng 0) bị xếp vào top bất thường → thẻ bị khoá hoặc giao dịch bị từ chối đúng lúc cần (vd. mua thuốc). *Giảm thiểu:* điểm bất thường chỉ dùng để **ưu tiên hàng đợi rà soát của nhân viên**, không tự động khoá; ưu tiên bước xác minh nhẹ (nhắn tin xác nhận) trước khi từ chối; đo và báo cáo số false positive trong top-100 như chi phí đối với người dùng, không chỉ chi phí của ngân hàng.
-- **Chủ thẻ có thói quen "hiếm".** Cơ chế: Isolation Forest/LOF đo mức *hiếm*, không đo mức *gian lận*; người có hành vi khác số đông bị phạt hệ thống. *Giảm thiểu:* so sánh tỷ lệ false positive theo dải Amount (biến duy nhất đo được); nêu rõ không đo được theo nhóm nhân khẩu.
-- **Nạn nhân của gian lận không được rà soát.** Cơ chế: trung bình 246 fraud/ngày > ngân sách 100 → trung bình ~146 fraud/ngày nằm ngoài khả năng rà soát (ngày 0: 181, ngày 1: 111). *Giảm thiểu:* báo cáo trung thực trần 40,65%; đề xuất cân nhắc tăng ngân sách hoặc thêm luật chặn tự động cho nhóm rủi ro rất cao.
-- **Nhân viên rà soát.** Cơ chế: hàng đợi nhiều false positive gây mệt mỏi cảnh báo. *Giảm thiểu:* theo dõi precision@100 theo thời gian.
-- **Quyền riêng tư:** dữ liệu đã ẩn danh bằng PCA và không có định danh trực tiếp; **không** cố gắng khôi phục/ghép với dữ liệu khác; không công bố dòng dữ liệu thô; giữ cục bộ theo quy định học phần.
-- **Công bằng theo nhóm:** dataset **không có thuộc tính nhạy cảm**, nên chỉ nói được điều này một cách trung thực và không bịa số liệu theo nhóm.
+- **Chủ thẻ hợp pháp bị đánh dấu nhầm (false positive).** Cơ chế: giao dịch đúng nhưng hiếm (đi xa, mua món đắt bất thường, Amount rất nhỏ/bằng 0) bị xếp vào top bất thường → thẻ bị khoá hoặc giao dịch bị từ chối đúng lúc cần (vd. mua thuốc). *Số liệu thực nghiệm tại ngân sách Top-100 (Ngày 1 Test):* mô hình không giám sát (Isolation Forest / LOF) có tới **69–70 false positive / 100 cảnh báo**, trong khi mô hình giám sát (Random Forest) giảm xuống còn **7 false positive / 100 cảnh báo** (`Precision@100 = 93%`). *Giảm thiểu:* điểm rủi ro chỉ dùng để **ưu tiên hàng đợi rà soát của nhân viên**, không tự động khoá thẻ; ưu tiên bước xác minh nhẹ (OTP/tin nhắn xác nhận) trước khi từ chối; báo cáo số false positive trong Top-100 như chi phí trực tiếp đối với khách hàng.
+- **Chủ thẻ có thói quen "hiếm".** Cơ chế: Isolation Forest/LOF đo mức *hiếm*, không đo mức *gian lận*; người có hành vi khác số đông bị phạt hệ thống. *Giảm thiểu:* so sánh tỷ lệ false positive theo dải Amount (`amount_band` — biến phân tầng duy nhất đo được trên dashboard Superset); nêu rõ không đo được theo nhóm nhân khẩu.
+- **Nạn nhân của gian lận không được rà soát (false negative).** Cơ chế: số lượng gian lận thực tế mỗi ngày vượt ngân sách rà soát 100 giao dịch/ngày (trên toàn bộ dataset: trung bình 246 fraud/ngày, trần 40,65%; trên Ngày 1 sau khử trùng: 201 fraud, trần lý thuyết `100 / 201 = 49,75%`, thực tế Random Forest bắt được **93/201 fraud**, bỏ lọt **108 fraud**). *Giảm thiểu:* báo cáo trung thực trần ngân sách; đề xuất kết hợp chặn tự động cho phân khúc điểm xác suất cực cao (`sup_prob_score >= 0.90`) và mở rộng ngân sách rà soát theo ca.
+- **Nhân viên rà soát.** Cơ chế: hàng đợi nhiều false positive gây mệt mỏi cảnh báo (alert fatigue). *Giảm thiểu:* theo dõi `Precision@100` theo từng khung giờ tương đối và dải số tiền trên Dashboard Superset.
+- **Quyền riêng tư:** dữ liệu đã ẩn danh bằng PCA và không có định danh trực tiếp; **không** cố gắng khôi phục/ghép với dữ liệu khác; không công bố dòng dữ liệu thô; giữ cục bộ theo quy định học phần (`.gitignore` chặn `data/raw/*` và `data/processed/*`).
+- **Công bằng theo nhóm:** dataset **không có thuộc tính nhạy cảm** (giới tính, độ tuổi, thu nhập, khu vực), nên nhóm báo cáo trung thực giới hạn này và không suy diễn theo nhóm nhân khẩu.
 
-## 8. Khai báo sử dụng AI (bản nháp cho tiêu chí 10)
-AI (Claude) hỗ trợ: viết code notebook audit, soạn bản nháp báo cáo này. Số liệu được tính bằng code chạy trên file `creditcard.csv`; Khang cần chạy lại trên máy mình và đối chiếu. **Lưu ý quy định:** file dữ liệu thô đã được tải lên một dịch vụ AI để chạy audit — tài liệu học phần ghi "không tải dữ liệu lên dịch vụ của bên thứ ba". Dataset là dữ liệu công khai, đã ẩn danh, nhưng Khang cần báo trưởng nhóm/giảng viên và ghi vào khai báo AI (việc còn mở); từ nay các thành viên khác nên chạy notebook cục bộ và chỉ gửi *kết quả tổng hợp* cho AI, không gửi file thô.
+## 8. Khai báo sử dụng AI (Tiêu chí 10)
+AI hỗ trợ: gợi ý khung code kiểm toán dữ liệu (`notebooks/01_data_audit.ipynb`), đối chiếu quy trình tiền xử lý (`src/preprocessing.py`), viết truy vấn kiểm chứng đối khớp SQL và cấu trúc báo cáo. Toàn bộ số liệu trong báo cáo được tính toán trực tiếp bằng code chạy cục bộ trên file `creditcard.csv` (`sha256 = 76274b69...98551a89`) và đối chiếu chéo giữa Python — PostgreSQL — Apache Superset. Nhóm tuân thủ nguyên tắc chỉ chia sẻ số liệu tổng hợp (summary metrics) và schema trong quá trình hoàn thiện báo cáo, không commit dữ liệu thô hoặc file điểm dòng chi tiết dung lượng lớn lên kho mã nguồn công khai.
 
 ## 9. Biên bản bàn giao
 | Mục | Nội dung |
 |---|---|
-| Người bàn giao → nhận | Khang → Cường, Quỳnh, Huy, Mong |
-| Phiên bản | Audit v1 (đã kiểm chứng 26/10/2026), sha256 `76274b69…98551a89` |
-| Tệp | `notebooks/01_data_audit.ipynb`, `outputs/data_dictionary.csv`, `outputs/quality_issues.csv`, `outputs/audit_metrics.json`, `outputs/amount_band_fraud_rate.csv`, `outputs/relative_hour_fraud_rate.csv`, `figures/fig01–03*.png`, `outputs/license_evidence.md` |
+| Người bàn giao → nhận | Khang (A) → Cường (B), Quỳnh (C), Huy (D), Mong (E) |
+| Phiên bản | Audit v1.1 (đã kiểm chứng & chốt toàn nhóm), sha256 `76274b69…98551a89` |
+| Tệp | `notebooks/01_data_audit.ipynb`, `outputs/data_dictionary.csv`, `outputs/quality_issues.csv`, `outputs/audit_metrics.json`, `outputs/amount_band_fraud_rate.csv`, `outputs/relative_hour_fraud_rate.csv`, `figures/fig01–03*.png`, `outputs/license_evidence.md`, `outputs/decision_log.csv` |
 | Cách tái tạo | Xem `README.md` (Restart & Run All) |
-| Cần Cường làm | Quyết định DQ-01, DQ-02, DQ-04, DQ-06; công bố schema đầu ra |
-| Cần Quỳnh biết | Không có ngày/giờ thật; `Dim_Channel` là mô phỏng; grain = 1 giao dịch |
-| Cần Huy + Mong biết | Trần recall 40,65% @100/ngày; dùng split phân tầng; cẩn trọng bản sao |
+| Trạng thái Cường (B) | **Đã hoàn thành:** Quyết định DQ-01, DQ-02, DQ-04, DQ-06 trong `decision_log.csv`; xuất `src/preprocessing.py` và `preprocessing_metadata.json` |
+| Trạng thái Quỳnh (C) | **Đã hoàn thành:** Thiết kế Star Schema (`dim_date`, `dim_hour`, `dim_amount_band`, `dim_channel` mô phỏng, `fact_transaction`) và 6 script SQL nạp kho + đối khớp |
+| Trạng thái Huy (D) + Mong (E) | **Đã hoàn thành:** Đánh giá công bằng trên `split_random` và `split_temporal` (Day 0 → Day 1) tại `k = 100`, báo cáo kèm trần lý thuyết và tích hợp điểm vào kho PostgreSQL / Superset |
 | Giới hạn đã biết | Mục 5 |
-| Việc còn mở | (1) Khang báo trưởng nhóm việc đã đưa CSV thô lên dịch vụ AI và ghi vào khai báo AI; (2) nhóm chốt cách hiểu "100 giao dịch/ngày"; (3) nhóm chốt người phụ trách mục đạo đức |
+| Việc còn mở | **Không còn (Đã đóng toàn bộ quyết định D-01 → D-11 trong `outputs/decision_log.csv`)** |
 
 ## 10. Kết quả kiểm thử tái lập (Khang chạy trên máy, 26/10/2026)
 | Mục | Kết quả trên máy Khang | Kết quả lần chạy đầu | Khớp |

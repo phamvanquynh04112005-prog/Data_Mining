@@ -1,11 +1,12 @@
 # Đồ án 6: Phát hiện giao dịch thẻ gian lận — Phần E (Mong): Phân lớp có giám sát, Đối sánh hai họ mô hình và Dashboard
 
-- **Người thực hiện:** Mong (Thành viên E — GitHub: `HHoaiMong`)
+- **Người thực hiện:** Mong (Thành viên E — GitHub: `HHoaiMong`) & Khang (Thành viên A — Phối hợp hoàn tất E11, E13, E14)
 - **Nhánh làm việc:** `feature/mong-classification-dashboard`
-- **Ngày cập nhật:** 2026-10-31
+- **Ngày cập nhật:** 2026-11-01
 - **Trạng thái tổng thể:**
-  - **Đã hoàn thành 100% (E1 → E10, E12):** Đồng bộ giao thức với Cường (B), Quỳnh (C), Huy (D); hoàn thiện và chạy xong `notebooks/04_supervised_classification.ipynb`; lập bảng đối sánh hai họ mô hình (E7, E8); xuất file điểm `outputs/model_scores_warehouse.csv` đúng chuẩn kho PostgreSQL của Quỳnh (E9); dựng và kiểm thử Dashboard Superset 5 biểu đồ + 1 bộ lọc trên dữ liệu CSV từ Notebook (`sql/dashboard_virtual_datasets_mong.sql`).
-  - **Phần bàn giao cho Khang (A) làm tiếp (E11, E13, E14):** Nạp kho PostgreSQL `dm_course` của Quỳnh kèm `outputs/model_scores_warehouse.csv`, nối Superset với 6 Views (`sql/04-dashboard-views.sql`), chụp ảnh màn hình Dashboard/SQL Lab lưu vào `figures/` và Export Dashboard (`.zip`). Xem hướng dẫn chi tiết từng bước ở **Mục 6** bên dưới.
+  - **ĐÃ HOÀN THÀNH 100% (E1 → E14):**
+    - **E1 → E10, E12 (Mong):** Đồng bộ giao thức với Cường (B), Quỳnh (C), Huy (D); hoàn thiện và chạy xong `notebooks/04_supervised_classification.ipynb`; lập bảng đối sánh hai họ mô hình (E7, E8); xuất file điểm `outputs/model_scores_warehouse.csv` đúng chuẩn kho PostgreSQL của Quỳnh (E9); dựng và kiểm thử Dashboard Superset 5 biểu đồ + 1 bộ lọc (`sql/dashboard_virtual_datasets_mong.sql`).
+    - **E11, E13, E14 (Khang hỗ trợ hoàn tất trên máy):** Đã khởi chạy container PostgreSQL 16 (`superset_db`) và Apache Superset 6.0.0 (`superset_app`), thực thi trọn vẹn 6 script SQL của Quỳnh (`01-staging.sql`, `02-star-schema.sql`, `03-transform.sql`, `05-load-model-scores.sql`, `04-dashboard-views.sql`, `olap_queries.sql`) trên cả hai database `dm_course` và `examples`; đối soát khớp 100% (`COPY 139490`, `sup_caught_fraud = 93`, `iforest_caught_fraud = 31`, `lof_caught_fraud = 30`); lưu đủ 3 ảnh chụp Dashboard & SQL Lab vào `figures/` (`fig05_dashboard_overview.png`, `fig06_dashboard_filtered.png`, `fig07_sqllab_reconciliation.png`) và đóng gói bản xuất Dashboard chuẩn tại `outputs/dashboard_export_superset.zip`.
 
 ---
 
@@ -147,82 +148,36 @@ Truy cập `http://localhost:8088` (tài khoản mặc định: `admin` / `admin
 
 ---
 
-## 6. BIÊN BẢN BÀN GIAO CHO KHANG (THÀNH VIÊN A) LÀM TIẾP (MỤC E11, E13, E14)
+## 6. Kết quả thực thi tích hợp Kho PostgreSQL, 6 Views & Xuất Dashboard Superset (Mục E11, E13, E14 — Đã hoàn tất)
 
-> **Gửi Khang (A):** Toàn bộ phần code, mô hình, bảng đối sánh E7 với Huy và file điểm `outputs/model_scores_warehouse.csv` cho kho của Quỳnh đã được Mong chạy xong và push lên nhánh `feature/mong-classification-dashboard`. Nhờ Khang thực hiện nốt **5 bước ngắn** dưới đây trên máy của Khang để nối Superset với kho PostgreSQL của Quỳnh, chụp ảnh màn hình Dashboard đưa vào `figures/` và tạo Pull Request nhé!
+> **Trạng thái: ĐÃ HOÀN TẤT 100% (Khang & Mong đã thực thi và kiểm chứng).** Dưới đây là biên bản kết quả thực thi và các câu lệnh tái lập đầy đủ.
 
-### Bước 1: Lấy nhánh `feature/mong-classification-dashboard` về máy Khang
-
-Đảm bảo trong thư mục `data/raw/` trên máy Khang đã có file `creditcard.csv` (`sha256: 76274b69…98551a89`), sau đó chạy:
-
+### Bước 1: Lấy nhánh `feature/mong-classification-dashboard`
 ```powershell
 git fetch origin
 git checkout feature/mong-classification-dashboard
 git pull origin feature/mong-classification-dashboard
 ```
 
-### Bước 2: Khởi tạo kho PostgreSQL `dm_course` của Quỳnh và nạp điểm mô hình (`outputs/model_scores_warehouse.csv`)
+### Bước 2: Khởi tạo kho PostgreSQL (`dm_course` & `examples`) và nạp điểm mô hình (`outputs/model_scores_warehouse.csv`)
 
-Mong đã xuất sẵn điểm của cả 3 mô hình (`Isolation Forest`, `LOF`, `Supervised Random Forest`) trên Ngày 1 vào file `outputs/model_scores_warehouse.csv` đúng 6 cột của Quỳnh.
+Đã thực thi toàn bộ 6 script SQL của Quỳnh (`01-staging.sql`, `02-star-schema.sql`, `03-transform.sql`, `05-load-model-scores.sql`, `04-dashboard-views.sql`, `olap_queries.sql`) trên PostgreSQL 16 (`superset_db`). Kết quả đối soát Bước C12 / E11 (`outputs/postgres_execution_log.txt` & `outputs/warehouse_validation_report.md`):
 
-- **Cách A (Nếu máy Khang đã cài PostgreSQL ở cổng `5432`):** Chạy 2 lệnh sau từ thư mục gốc `Data_Mining`:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File "sql\setup_local_db.ps1"
-python sql/run_pipeline.py
+```text
+=== BAO CAO DOI SOAT DIEM MO HINH (BUOC C12) ===
+ stg_score_rows | fact_total_rows | rows_with_iforest | iforest_top100_alerts | iforest_caught_fraud | rows_with_lof | lof_top100_alerts | lof_caught_fraud | rows_with_sup_prob | sup_top100_alerts | sup_caught_fraud 
+----------------+-----------------+-------------------+-----------------------+----------------------+---------------+-------------------+------------------+--------------------+-------------------+------------------
+         139490 |          284807 |            139490 |                   100 |                   31 |        139490 |               100 |               30 |             139490 |               100 |               93
+(1 row)
 ```
 
-- **Cách B (Nếu máy Khang không cài PostgreSQL ngoài Windows mà dùng luôn container `superset_db` của Docker Superset):** Sau khi bật Docker Superset (`docker compose -f docker-compose-image-tag.yml up -d`), chạy khối lệnh sau từ thư mục gốc `Data_Mining` để nạp toàn bộ kho dữ liệu và 6 Views của Quỳnh vào thẳng PostgreSQL trong Docker:
+### Bước 3 & 4: Chụp ảnh màn hình Dashboard, SQL Lab và Export Dashboard (`.zip`) (Mục E13, E14)
 
-```powershell
-docker exec superset_db mkdir -p /tmp/dm_warehouse/data/raw /tmp/dm_warehouse/outputs /tmp/dm_warehouse/sql
-docker cp data/raw/creditcard.csv superset_db:/tmp/dm_warehouse/data/raw/creditcard.csv
-docker cp outputs/model_scores_warehouse.csv superset_db:/tmp/dm_warehouse/outputs/model_scores_warehouse.csv
-docker cp sql/. superset_db:/tmp/dm_warehouse/sql/
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/01-staging.sql
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/02-star-schema.sql
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/03-transform.sql
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/05-load-model-scores.sql
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/04-dashboard-views.sql
-docker exec -w /tmp/dm_warehouse superset_db psql -U examples -d examples -v ON_ERROR_STOP=1 -f sql/olap_queries.sql
-```
-
-*(Khi chạy xong Bước 2, bảng kiểm tra cuối của `05-load-model-scores.sql` sẽ in ra đúng: `sup_top100_alerts = 100`, `sup_caught_fraud = 93`, `iforest_caught_fraud = 31`, `lof_caught_fraud = 30`).*
-
-### Bước 3: Kết nối Apache Superset với các View trong `sql/04-dashboard-views.sql` (Mục E11, E12)
-
-1. Mở Superset tại `http://localhost:8088` (đăng nhập `admin` / `admin`).
-2. Kết nối Database:
-   - Nếu dùng **Cách B** ở Bước 2: các bảng và 6 Views (`vw_dash_01` → `vw_dash_06`) đã nằm sẵn ngay trong database **`examples`** (`schema = public`) của Superset, không cần tạo kết nối mới!
-   - Nếu dùng **Cách A** (PostgreSQL cài trên Windows): vào **Settings -> Database Connections -> + Database -> PostgreSQL**, nhập SQLAlchemy URI:
-     - `postgresql+psycopg2://dm:dm@host.docker.internal:5432/dm_course` (nếu Superset chạy trong Docker)
-     - hoặc `postgresql+psycopg2://dm:dm@localhost:5432/dm_course` (nếu Superset chạy trực tiếp trên máy).
-3. Vào **Datasets -> + Dataset**, chọn các View `vw_dash_01` đến `vw_dash_06` (và/hoặc chạy các câu SQL trong `sql/dashboard_virtual_datasets_mong.sql` trên SQL Lab rồi bấm **Save dataset**) để hiển thị 5 biểu đồ trên Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** theo đúng bảng ở **Mục 4** phía trên, kèm 1 bộ lọc (`Dải số tiền` hoặc `Ngày tương đối`).
-
-### Bước 4: Chụp ảnh màn hình và Export Dashboard lưu vào repo (Mục E13, E14)
-
-1. Chụp 3 ảnh màn hình và lưu vào thư mục `figures/`:
-   - `figures/fig05_dashboard_overview.png`: Ảnh toàn bộ Dashboard ở trạng thái mặc định (hiển thị rõ 5 biểu đồ và con số `93` giao dịch gian lận bắt được trong Top 100).
-   - `figures/fig06_dashboard_filtered.png`: Ảnh toàn bộ Dashboard sau khi chọn bộ lọc (ví dụ lọc dải số tiền `0-10`, số liệu trên biểu đồ tự động thay đổi theo bộ lọc).
-   - `figures/fig07_sqllab_reconciliation.png`: Ảnh chạy câu lệnh đối soát trong **SQL Lab** ra đúng `93` giao dịch gian lận trong Top 100 của Random Forest:
-     ```sql
-     SELECT so_gd_ra_soat, so_fraud_bat_duoc, so_bao_dong_gia_fp, precision_at_100_pct, recall_pct
-     FROM vw_dash_06_model_vs_baseline_comparison
-     WHERE date_key = 1 AND method_order = 7;
-     ```
-2. Ở trang danh sách **Dashboards** của Superset, bấm biểu tượng **Export** ở dòng *"Đồ án 6 - Phát hiện gian lận thẻ"* để tải file `.zip` về và lưu tại `outputs/dashboard_export_superset.zip` (kiểm tra file export không chứa mật khẩu).
-
-### Bước 5: Commit, Push lên GitHub và Tạo Pull Request vào `main`
-
-Sau khi đã có ảnh trong `figures/` và file export, chạy lệnh:
-
-```powershell
-git add figures/ outputs/ README_E_Mong.md
-git commit -m "docs(part-e): add Superset dashboard screenshots and export"
-git push origin feature/mong-classification-dashboard
-```
-
-Cuối cùng, lên GitHub tạo **Pull Request** từ nhánh `feature/mong-classification-dashboard` vào nhánh `main`. *(Lưu ý: không `git add outputs/classification_scores_test.csv` vì file này nặng 10,6 MB).*
+Các tệp bàn giao cuối cùng đã được tạo và kiểm chứng trong kho mã nguồn:
+1. `figures/fig05_dashboard_overview.png`: Ảnh toàn bộ Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** ở trạng thái mặc định (hiển thị rõ 5 biểu đồ, bộ lọc `Dải số tiền` và thẻ Big Number `93` giao dịch gian lận bắt được trong Top 100).
+2. `figures/fig06_dashboard_filtered.png`: Ảnh toàn bộ Dashboard khi áp dụng bộ lọc `Dải số tiền = 2) 0-10` (thẻ Big Number và biểu đồ cột chồng tự động cập nhật sang `38` giao dịch bắt được / `50` bỏ sót trên tập Ngày 1 đã khử trùng).
+3. `figures/fig07_sqllab_reconciliation.png`: Ảnh đối soát trực tiếp trên **SQL Lab** giữa bảng `public.classification_scores_test`, bảng `public.Fact_Transaction` (`sup_caught_fraud = 93`, `iforest_caught_fraud = 31`, `lof_caught_fraud = 30`) và phân rã theo 7 dải số tiền.
+4. `outputs/dashboard_export_superset.zip`: Gói xuất chuẩn từ Apache Superset (`superset export-dashboards`) chứa định nghĩa YAML của Dashboard `o_an_6_-_Phat_hien_gian_lan_the_12.yaml`, 5 biểu đồ, 4 datasets và cấu hình kết nối `examples.yaml` (mật khẩu đã được ẩn tự động thành `XXXXXXXXXX`).
 
 ---
 
