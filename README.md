@@ -79,3 +79,17 @@ Kết quả đúng khi:
 - `stg_raw_transactions` và `Fact_Transaction` đều có đúng **`284,807`** dòng, **`492`** gian lận (`0.1727%`).
 - Đối soát `DQ-01` (`1,081` bản sao thừa, `283,726` dòng sau khử trùng với `473` gian lận), `DQ-02` (`1,825` dòng `Amount = 0` với `27` gian lận), `DQ-06` (`1,924` dòng có ít nhất 1 cột $V_i$ vượt $|z\text{-score}| > 10$ chứa `231` gian lận) khớp 100% với báo cáo trong `outputs/warehouse_validation_report.md`, `outputs/olap_and_handover_summary.md` và log thực thi `outputs/postgres_execution_log.txt`.
 - Chuỗi kết nối cho Apache Superset (Thành viên E — Mong): `postgresql+psycopg2://dm:dm@localhost:5432/dm_course`.
+
+## 3. Chạy lại Phần D (Huy — Phát hiện bất thường không giám sát: Isolation Forest & LOF)
+```bash
+cd notebooks && jupyter lab        # mở 03_anomaly_detection.ipynb → Kernel > Restart & Run All
+```
+- Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/huy_experiment_log.md` và `outputs/anomaly_scores_test.csv`.
+
+## 4. Chạy lại Phần E (Mong & Khang — Phân lớp có giám sát, Đối sánh 2 họ mô hình & Dashboard Superset)
+```bash
+cd notebooks && jupyter lab        # mở 04_supervised_classification.ipynb → Kernel > Restart & Run All
+```
+- Notebook tự động sinh bảng kết quả phân lớp (`outputs/classification_results.csv`, `outputs/classification_validation.csv`), bảng đối sánh hai họ mô hình trên cả 2 giao thức chia tập (`outputs/model_family_comparison_random_test.csv`, `outputs/model_family_comparison_temporal_test.csv`) và file điểm tích hợp kho PostgreSQL (`outputs/model_scores_warehouse.csv` — `139,490` dòng Test Ngày 1).
+- Sau khi chạy `sql/05-load-model-scores.sql`, kết quả đối soát trên `Fact_Transaction` đạt: `sup_caught_fraud = 93`, `iforest_caught_fraud = 31`, `lof_caught_fraud = 30` (khớp 100% giữa Python, PostgreSQL và thẻ Big Number trên Apache Superset).
+- Ảnh chụp Dashboard và SQL Lab lưu tại `figures/fig05_dashboard_overview.png`, `figures/fig06_dashboard_filtered.png`, `figures/fig07_sqllab_reconciliation.png`; gói xuất Dashboard lưu tại `outputs/dashboard_export_superset.zip`. Xem hướng dẫn chi tiết tại `README_E_Mong.md`.
