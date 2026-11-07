@@ -129,7 +129,20 @@ Toàn bộ 6 SQL Views đã được khởi tạo trong schema `public` của da
 | **3** | **`vw_dash_03_relative_hour_trend`** | **Time-Series Bar + Line Chart qua 48 giờ tương đối (`0..47`):** Xu hướng lưu lượng giao dịch, số gian lận (gốc & khử trùng), tỷ lệ gian lận (%) và trung bình trượt 3 giờ (`trung_binh_truot_3h_fraud`). | `hour_key`, `rel_hour_label`, `date_key`, `rel_day_label`, `hour_in_rel_day`, `so_giao_dich`, `so_gian_lan`, `so_gd_khu_trung`, `so_gian_lan_khu_trung`, `ty_le_gian_lan_pct`, `trung_binh_truot_3h_fraud`, `interpretation_note` |
 | **4** | **`vw_dash_04_top100_review_queue`** | **Bảng Hàng đợi Ưu tiên Rà soát Top-100 GD/ngày:** Tách biệt rõ từng phương pháp xếp hạng (`phuong_phap_xep_hang`: Baseline PCA `Max(\|V\|)`, `Isolation Forest`, `LOF`, `Supervised`) — **không trộn thang đo** — kèm cột `trang_thai_diem_mo_hinh` cảnh báo rõ khi chưa nạp điểm ML. | `txn_id`, `date_key`, `rel_day_label`, `hour_key`, `band_order`, `dai_so_tien`, `amount`, `is_fraud`, `ket_qua_ra_soat`, `phuong_phap_xep_hang`, `trang_thai_diem_mo_hinh`, `diem_xep_hang_rieng`, `hang_ra_soat_trong_ngay` |
 | **5** | **`vw_dash_05_score_distribution`** | **Histogram / Bar Chart phân phối độ lệch cực đại:** So sánh phân phối biên độ `Max(\|V1..V28\|)` theo 7 mức (`bucket_order 1..7`) giữa lớp Hợp pháp (`0`) và Gian lận (`1`), có cột `loai_thang_do` và `trang_thai_diem_mo_hinh` ghi rõ đây là thang đo PCA gốc. | `loai_thang_do`, `trang_thai_diem_mo_hinh`, `date_key`, `rel_day_label`, `bucket_order`, `dai_muc_bat_thuong`, `is_fraud`, `nhom_nhan`, `is_duplicate`, `so_giao_dich` |
-| **6** | **`vw_dash_06_model_vs_baseline_comparison`** | **Biểu đồ Tổng kết So sánh Mô hình vs. Baseline @ 100 GD/ngày:** Đặt cạnh nhau 4 Baseline, 3 Mô hình ML (`Isolation Forest`, `LOF`, `Supervised`) và `Trần lý thuyết` kèm cột `trang_thai_du_lieu`. | `method_order`, `ten_mo_hinh`, `ho_bai_toan`, `trang_thai_du_lieu`, `date_key`, `rel_day_label`, `so_gd_ra_soat`, `so_fraud_bat_duoc`, `so_bao_dong_gia_fp`, `tong_fraud_ngay`, `precision_at_100_pct`, `recall_pct` |
+| **6** | **`vw_dash_06_model_vs_baseline_comparison`** | **Biểu đồ Tổng kết So sánh Mô hình vs. Baseline @ 100 GD/ngày (trên tập đã khử trùng `is_duplicate = FALSE`):** Đặt cạnh nhau 4 Baseline, 3 Mô hình ML (`Isolation Forest`, `LOF`, `Supervised`) và `Trần lý thuyết` trên cùng mẫu số đã khử trùng (`DQ-01`: Ngày 0 = `272` gian lận, Ngày 1 = `201` gian lận, trần Ngày 1 = `49.75%`). | `method_order`, `ten_mo_hinh`, `ho_bai_toan`, `trang_thai_du_lieu`, `date_key`, `rel_day_label`, `so_gd_ra_soat`, `so_fraud_bat_duoc`, `so_bao_dong_gia_fp`, `tong_fraud_ngay`, `precision_at_100_pct`, `recall_pct` |
+
+### Kết Quả Thực Thi `vw_dash_06_model_vs_baseline_comparison` Trên Ngày 1 (`date_key = 1`, Đã Khử Trùng `DQ-01`: `139,490` GD / `201` Gian Lận)
+
+| `method_order` | `ten_mo_hinh` | `trang_thai_du_lieu` | `so_gd_ra_soat` | `so_fraud_bat_duoc` (`TP`) | `so_bao_dong_gia_fp` (`FP`) | `tong_fraud_ngay` | `precision_at_100_pct` (%) | `recall_pct` (%) |
+| :---: | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **1** | **Baseline 0: Đoán toàn bộ Không gian lận (Bẫy Accuracy 99.83%)** | Sẵn sàng (Dữ liệu gốc) | 0 | 0 | 0 | 201 | 0.00% | 0.00% |
+| **2** | **Baseline 1: Rà soát ngẫu nhiên 100 GD/ngày (Kỳ vọng)** | Sẵn sàng (Dữ liệu gốc) | 100 | 0.14 | 99.86 | 201 | 0.14% | 0.07% |
+| **3** | **Baseline 2: Luật thủ công Top-100 Amount cao nhất/ngày** | Sẵn sàng (Dữ liệu gốc) | 100 | 0 | 100 | 201 | 0.00% | 0.00% |
+| **4** | **Unsupervised Heuristic: Top-100 Max(\|V1..V28\|) cao nhất/ngày** | Sẵn sàng (Dữ liệu gốc) | 100 | 10 | 90 | 201 | 10.00% | 4.98% |
+| **5** | **Mô hình 1: Isolation Forest — Top-100/ngày (Huy - D)** | Đã nạp điểm mô hình | 100 | 31 | 69 | 201 | 31.00% | **15.42%** |
+| **6** | **Mô hình 2: Local Outlier Factor (LOF) — Top-100/ngày (Huy - D)** | Đã nạp điểm mô hình | 100 | 30 | 70 | 201 | 30.00% | **14.93%** |
+| **7** | **Mô hình 3: Phân lớp Có giám sát — Top-100/ngày (Mong - E)** | Đã nạp điểm mô hình | 100 | 93 | 7 | 201 | 93.00% | **46.27%** |
+| **9** | **Trần lý thuyết: Bộ xếp hạng hoàn hảo (Giới hạn ngân sách 100/ngày)** | Sẵn sàng (Dữ liệu gốc) | 100 | 100 | 0 | 201 | 100.00% | **49.75%** |
 
 ---
 
@@ -181,3 +194,14 @@ psql -U dm -h localhost -p 5432 -d dm_course -v ON_ERROR_STOP=1 -f "sql/05-load-
 ```
 Script `05-load-model-scores.sql` sẽ tự động nạp vào `stg_model_scores`, tính `iforest_daily_rank`, `lof_daily_rank`, `sup_daily_rank` trong từng ngày tương đối và cập nhật `Fact_Transaction`. Các View `vw_dash_04_top100_review_queue` và `vw_dash_06_model_vs_baseline_comparison` sẽ tự động hiển thị kết quả của cả 3 mô hình!
 ```
+
+---
+
+## 4. Khai Báo Sử Dụng AI Của Thành Viên C — Quỳnh (Chuẩn Bảng A1 — Phụ Lục A `report-template.md`)
+
+| Công cụ / dịch vụ | Mục đích sử dụng | Phần áp dụng (tệp / mục) | Cách nhóm kiểm chứng kết quả |
+| :--- | :--- | :--- | :--- |
+| **Gemini / Google Antigravity** | Hỗ trợ rà soát cú pháp SQL PostgreSQL (`ROLLUP`, `CUBE`, `GROUPING SETS`, `WINDOW FUNCTIONS`), viết runner đa nền tảng và kiểm tra đối soát toàn vẹn dữ liệu | `sql/01-staging.sql` → `sql/05-load-model-scores.sql`, `sql/olap_queries.sql`, `sql/run_pipeline.py`, `outputs/star_schema_erd.md`, `outputs/warehouse_validation_report.md`, `outputs/olap_and_handover_summary.md` | Chạy thực nghiệm trực tiếp trên PostgreSQL 16.15-5 (`dm_course`), đối chiếu từng con số (`284,807` dòng, `492` gian lận, `1,081` bản sao `DQ-01`, `139,490` dòng điểm mô hình Ngày 1, `201` gian lận Ngày 1, `31 / 30 / 93` ca bắt được) khớp 100% với `outputs/audit_metrics.json` và `outputs/preprocessing_checks.json` |
+
+- **Cam kết bảo mật dữ liệu:** Thành viên C (Quỳnh) xác nhận **không tải dữ liệu thô (`data/raw/creditcard.csv`) lên bất kỳ dịch vụ AI bên thứ ba nào**; toàn bộ quá trình nạp dữ liệu (`COPY 284807` và `COPY 139490`) và truy vấn OLAP đều thực thi cục bộ trên PostgreSQL `localhost:5432`.
+

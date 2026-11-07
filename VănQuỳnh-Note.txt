@@ -4,7 +4,7 @@ HỒ SƠ GHI CHÚ TOÀN DIỆN — THÀNH VIÊN C (PHẠM VĂN QUỲNH)
 Đề tài 6: Ngân hàng — Phát hiện giao dịch thẻ gian lận (Credit Card Fraud Detection)
 Câu hỏi kinh doanh trung tâm: "Với ngân sách rà soát 100 giao dịch mỗi ngày,
                               ta bắt được bao nhiêu phần trăm gian lận?"
-Ngày hoàn thành & hiệu chỉnh: 30/10/2026
+Ngày hoàn thành & hiệu chỉnh: 11/08/2026
 Kho GitHub nhóm: https://github.com/phamvanquynh04112005-prog/Data_Mining.git
 ================================================================================
 
@@ -287,6 +287,25 @@ Sau khi cài xong, chạy script thiết lập tự động (CHỈ DÙNG CHO MÁ
   + Ngày 0: 23 fraud (Precision@100 = 23.00%, Recall = 8.19%)
   + Ngày 1: 12 fraud (Precision@100 = 12.00%, Recall = 5.69%)
   + Tổng 2 ngày: 35 fraud / 200 GD (Precision@100 = 17.50%, Recall = 7.11%, đạt 17.50% trần lý thuyết).
+
+6.3. Kết quả đối soát Điểm Mô hình thực tế (Bước C12 — sql/05-load-model-scores.sql & View 06)
+----------------------------------------------------------------------------------------------
+- File nguồn: outputs/model_scores_warehouse.csv (do Huy D & Mong E xuất từ tập
+  Test Ngày tương đối 1 sau khử trùng DQ-01).
+- Số dòng nạp vào stg_model_scores & cập nhật Fact_Transaction: 139,490 dòng (COPY 139490).
+- Đồng bộ mẫu số tại View 06 (vw_dash_06_model_vs_baseline_comparison):
+  + Đã thêm `WHERE f.is_duplicate = FALSE` trong CTE `ranked` của `sql/04-dashboard-views.sql`
+    để mẫu số `tong_fraud_ngay` ở Ngày 1 là `201` ca gian lận đã khử trùng (khớp 100% với
+    Notebook 03, Notebook 04 và Dashboard của nhóm).
+- Kết quả bắt gian lận trong ngân sách Top-100 giao dịch/ngày trên Ngày 1 (từ View 06):
+  + Baseline 0 (Đoán toàn bộ Không gian lận)    : 0/201 fraud (Precision@100 = 0.00%, Recall = 0.00%).
+  + Baseline 1 (Rà soát ngẫu nhiên 100 GD/ngày) : 0.14/201 fraud (Precision@100 = 0.14%, Recall = 0.07%).
+  + Baseline 2 (Top-100 Amount cao nhất/ngày)   : 0/201 fraud (Precision@100 = 0.00%, Recall = 0.00%).
+  + Baseline 3 (Top-100 Max(|V1..V28|)/ngày)    : 10/201 fraud (Precision@100 = 10.00%, Recall = 4.98%).
+  + Mô hình 1 — Isolation Forest (Huy D)        : 31/201 fraud (Precision@100 = 31.00%, Recall = 15.42%).
+  + Mô hình 2 — Local Outlier Factor LOF (Huy D): 30/201 fraud (Precision@100 = 30.00%, Recall = 14.93%).
+  + Mô hình 3 — Random Forest Có giám sát (Mong E): 93/201 fraud (Precision@100 = 93.00%, Recall = 46.27%).
+  + Trần lý thuyết (Giới hạn ngân sách 100/ngày): 100/201 fraud (Precision@100 = 100.00%, Recall = 49.75%).
 
 
 ================================================================================

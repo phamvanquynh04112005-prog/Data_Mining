@@ -1,15 +1,7 @@
-================================================================================
-LOG THỰC THI THỰC TẾ TRÊN POSTGRESQL 16 (DOCKER CONTAINER superset_db)
-Thời gian chạy: 2026-10-31 14:00:00 +07:00
-Dữ liệu nguồn: data/raw/creditcard.csv (150,828,752 bytes)
-SHA-256: 76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89
-Database: postgresql://dm:dm@localhost:5432/dm_course & postgresql://examples:examples@localhost:5432/examples
-================================================================================
 
-[1/4] Running sql/01-staging.sql (Create Staging & Load creditcard.csv)...
+[1/6] Running sql/01-staging.sql...
 SET
 BEGIN
-psql:sql/01-staging.sql:12: NOTICE:  table "stg_raw_transactions" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
@@ -18,7 +10,6 @@ COMMENT
 COMMENT
 [01-staging] Dang nap 284.807 dong tu data/raw/creditcard.csv vao stg_raw_transactions...
 COPY 284807
-psql:sql/01-staging.sql:66: NOTICE:  table "stg_model_scores" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
@@ -29,18 +20,14 @@ COMMIT
 (1 row)
 
 
-[2/4] Running sql/02-star-schema.sql (Create 4 Dimensions & Fact_Transaction)...
+
+[2/6] Running sql/02-star-schema.sql...
 SET
 BEGIN
-psql:sql/02-star-schema.sql:14: NOTICE:  table "fact_transaction" does not exist, skipping
 DROP TABLE
-psql:sql/02-star-schema.sql:15: NOTICE:  table "dim_hour" does not exist, skipping
 DROP TABLE
-psql:sql/02-star-schema.sql:16: NOTICE:  table "dim_date" does not exist, skipping
 DROP TABLE
-psql:sql/02-star-schema.sql:17: NOTICE:  table "dim_amountband" does not exist, skipping
 DROP TABLE
-psql:sql/02-star-schema.sql:18: NOTICE:  table "dim_channel" does not exist, skipping
 DROP TABLE
 CREATE TABLE
 COMMENT
@@ -65,7 +52,16 @@ CREATE INDEX
 CREATE INDEX
 COMMIT
 
-[3/4] Running sql/03-transform.sql (Populate Warehouse & Reconcile Counts)...
+psql:sql/02-star-schema.sql:14: NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to view vw_dash_01_daily_budget_kpi
+drop cascades to view vw_dash_02_amount_band_risk
+drop cascades to view vw_dash_03_relative_hour_trend
+drop cascades to view vw_dash_04_top100_review_queue
+drop cascades to view vw_dash_05_score_distribution
+drop cascades to view vw_dash_06_model_vs_baseline_comparison
+
+
+[3/6] Running sql/03-transform.sql...
 SET
 BEGIN
 TRUNCATE TABLE
@@ -87,7 +83,8 @@ ANALYZE
 (1 row)
 
 
-[4/4] Running sql/05-load-model-scores.sql (Load Model Scores & Update Ranks)...
+
+[4/6] Running sql/05-load-model-scores.sql...
 SET
 BEGIN
 TRUNCATE TABLE
@@ -105,7 +102,8 @@ ANALYZE
 (1 row)
 
 
-[5/6] Running sql/04-dashboard-views.sql (Create 6 Dashboard Views for Superset)...
+
+[5/6] Running sql/04-dashboard-views.sql...
 SET
 BEGIN
 CREATE VIEW
@@ -121,19 +119,22 @@ COMMENT
 CREATE VIEW
 COMMENT
 COMMIT
-                        List of relations
- Schema |                  Name                   | Type | Owner 
---------+-----------------------------------------+------+-------
- public | vw_dash_01_daily_budget_kpi             | view | dm
- public | vw_dash_02_amount_band_risk             | view | dm
- public | vw_dash_03_relative_hour_trend          | view | dm
- public | vw_dash_04_top100_review_queue          | view | dm
- public | vw_dash_05_score_distribution           | view | dm
- public | vw_dash_06_model_vs_baseline_comparison | view | dm
-(6 rows)
+=== KIEM CHUNG VIEW 06 TREN NGAY 1 (DA KHU TRUNG DQ-01: 201 CA GIAN LAN) ===
+ method_order |                            ten_mo_hinh                             |   trang_thai_du_lieu   | so_gd_ra_soat | so_fraud_bat_duoc | so_bao_dong_gia_fp | tong_fraud_ngay | precision_at_100_pct | recall_pct 
+--------------+--------------------------------------------------------------------+------------------------+---------------+-------------------+--------------------+-----------------+----------------------+------------
+            1 | Baseline 0: Đoán toàn bộ Không gian lận (Bẫy Accuracy 99.83%)      | Sẵn sàng (Dữ liệu gốc) |             0 |                 0 |                  0 |             201 |                 0.00 |       0.00
+            2 | Baseline 1: Rà soát ngẫu nhiên 100 GD/ngày (Kỳ vọng)               | Sẵn sàng (Dữ liệu gốc) |           100 |              0.14 |              99.86 |             201 |                 0.14 |       0.07
+            3 | Baseline 2: Luật thủ công Top-100 Amount cao nhất/ngày             | Sẵn sàng (Dữ liệu gốc) |           100 |                 0 |                100 |             201 |                 0.00 |       0.00
+            4 | Unsupervised Heuristic: Top-100 Max(|V1..V28|) cao nhất/ngày       | Sẵn sàng (Dữ liệu gốc) |           100 |                10 |                 90 |             201 |                10.00 |       4.98
+            5 | Mô hình 1: Isolation Forest — Top-100/ngày (Huy - D)               | Đã nạp điểm mô hình    |           100 |                31 |                 69 |             201 |                31.00 |      15.42
+            6 | Mô hình 2: Local Outlier Factor (LOF) — Top-100/ngày (Huy - D)     | Đã nạp điểm mô hình    |           100 |                30 |                 70 |             201 |                30.00 |      14.93
+            7 | Mô hình 3: Phân lớp Có giám sát — Top-100/ngày (Mong - E)          | Đã nạp điểm mô hình    |           100 |                93 |                  7 |             201 |                93.00 |      46.27
+            9 | Trần lý thuyết: Bộ xếp hạng hoàn hảo (Giới hạn ngân sách 100/ngày) | Sẵn sàng (Dữ liệu gốc) |           100 |               100 |                  0 |             201 |               100.00 |      49.75
+(8 rows)
 
 
-[6/6] Running sql/olap_queries.sql (Execute 5 OLAP Queries: ROLLUP, CUBE, GROUPING SETS, WINDOW)...
+
+[6/6] Running sql/olap_queries.sql...
 SET
 
 =============================================================================
@@ -215,4 +216,5 @@ OLAP 5 (WINDOW RANKING @100/NGAY): Danh gia Baseline tren Ngan sach 100/ngay
 (9 rows)
 
 
-[DONE] OLAP Queries and Dashboard Views executed successfully!
+
+[DONE] Full PostgreSQL Star Schema, Model Score Loader, 6 Views & 5 OLAP Queries succeeded!

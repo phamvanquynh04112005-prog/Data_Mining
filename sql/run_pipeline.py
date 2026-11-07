@@ -317,8 +317,11 @@ def run_sql_pipeline() -> None:
         "sql/olap_queries.sql",
     ]
 
+    log_lines: list[str] = []
     for idx, script in enumerate(scripts, 1):
-        print(f"\n[{idx}/{len(scripts)}] Running {script}...")
+        header = f"\n[{idx}/{len(scripts)}] Running {script}..."
+        print(header)
+        log_lines.append(header)
         cmd = [
             psql,
             "-U",
@@ -334,12 +337,37 @@ def run_sql_pipeline() -> None:
             "-f",
             script,
         ]
-        subprocess.run(cmd, cwd=PROJECT_ROOT, env=env, check=True)
+        res = subprocess.run(
+            cmd,
+            cwd=PROJECT_ROOT,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if res.stdout:
+            print(res.stdout, end="")
+            log_lines.append(res.stdout)
+        if res.stderr:
+            print(res.stderr, end="", file=sys.stderr)
+            log_lines.append(res.stderr)
 
-    print("\n[DONE] Full PostgreSQL Star Schema, Model Score Loader, 6 Views & 5 OLAP Queries succeeded!")
+    done_msg = "\n[DONE] Full PostgreSQL Star Schema, Model Score Loader, 6 Views & 5 OLAP Queries succeeded!"
+    print(done_msg)
+    log_lines.append(done_msg)
+
+    log_path = PROJECT_ROOT / "outputs" / "postgres_execution_log.txt"
+    log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
+    print(f"[OK] Saved complete execution log to: {log_path}")
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Part C Warehouse & OLAP Runner + ERD Generator")
     parser.add_argument("--erd-only", action="store_true", help="Only generate figures/fig04_star_schema_erd.png")
     args = parser.parse_args()

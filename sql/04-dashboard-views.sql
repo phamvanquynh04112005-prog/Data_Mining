@@ -327,7 +327,12 @@ COMMENT ON VIEW vw_dash_05_score_distribution IS
 -- Phục vụ Biểu đồ 6: So sánh Hiệu năng Mô hình vs. Baseline dưới Ngân sách 100 GD/ngày
 -- Câu hỏi trả lời: "Các phương pháp phát hiện bất thường (IForest, LOF) và phân lớp
 -- cải thiện Precision@100 và Recall gấp bao nhiêu lần so với Baseline?"
--- Grain: 1 dòng = 1 Phương pháp x 1 Ngày tương đối
+-- Lưu ý đồng bộ (DQ-01 & D-01): Toàn bộ mô hình ML trong outputs/model_scores_warehouse.csv
+-- được huấn luyện và chấm điểm trên tập đã khử trùng (is_duplicate = FALSE: Ngày 0 có
+-- 144.236 GD / 272 gian lận; Ngày 1 có 139.490 GD / 201 gian lận; trần lý thuyết Ngày 1
+-- = 100/201 = 49.75%). Do đó CTE ranked lọc WHERE f.is_duplicate = FALSE để đồng nhất
+-- mẫu số Recall với toàn bộ Notebook thực nghiệm và Dashboard.
+-- Grain: 1 dòng = 1 Phương pháp x 1 Ngày tương đối (trên tập đã khử trùng DQ-01)
 -- =============================================================================
 CREATE OR REPLACE VIEW vw_dash_06_model_vs_baseline_comparison AS
 WITH ranked AS (
@@ -344,6 +349,7 @@ WITH ranked AS (
         f.sup_daily_rank
     FROM Fact_Transaction f
     JOIN Dim_Date d ON d.date_key = f.date_key
+    WHERE f.is_duplicate = FALSE
 )
 SELECT
     1 AS method_order,
@@ -491,4 +497,20 @@ COMMENT ON VIEW vw_dash_06_model_vs_baseline_comparison IS
 'View Dashboard 6: So sánh trực tiếp Precision@100, Recall và số dương tính giả (FP) giữa các Baseline, 3 Mô hình ML (IForest, LOF, Supervised) và Trần lý thuyết.';
 
 COMMIT;
+
+\echo '=== KIEM CHUNG VIEW 06 TREN NGAY 1 (DA KHU TRUNG DQ-01: 201 CA GIAN LAN) ==='
+SELECT
+    method_order,
+    ten_mo_hinh,
+    trang_thai_du_lieu,
+    so_gd_ra_soat,
+    so_fraud_bat_duoc,
+    so_bao_dong_gia_fp,
+    tong_fraud_ngay,
+    precision_at_100_pct,
+    recall_pct
+FROM vw_dash_06_model_vs_baseline_comparison
+WHERE date_key = 1
+ORDER BY method_order;
+
 
