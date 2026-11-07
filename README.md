@@ -9,8 +9,10 @@ data/processed/transactions_processed.csv <- sinh bởi src/preprocessing.py ho�
 src/preprocessing.py        <- Phần B (Cường): Module tiền xử lý & hợp đồng dữ liệu dùng chung
 notebooks/
   ├── 01_data_audit.ipynb   <- Phần A (Khang): Audit & chất lượng dữ liệu
-  └── 02_preprocessing.ipynb<- Phần B (Cường): Tiền xử lý, biến đổi, kiểm tra rò rỉ & decision log
-sql/                        <- Phần C (Quỳnh): PostgreSQL Staging, Star Schema, Transform, OLAP & Superset Views
+  ├── 02_preprocessing.ipynb<- Phần B (Cường): Tiền xử lý, biến đổi, kiểm tra rò rỉ & decision log
+  ├── 03_anomaly_detection.ipynb <- Phần D (Huy): Phát hiện bất thường không giám sát (Isolation Forest & LOF)
+  └── 04_supervised_classification.ipynb <- Phần E (Mong): Phân lớp có giám sát, 5-Fold CV & đối sánh 2 họ mô hình
+sql/                        <- Phần C (Quỳnh) & E (Mong): PostgreSQL Staging, Star Schema, Transform, OLAP & Superset Views
   ├── setup_local_db.ps1    <- Script khởi tạo DB cục bộ trên Windows (CHỈ DÙNG CHO MÁY CÁ NHÂN)
   ├── 01-staging.sql
   ├── 02-star-schema.sql
@@ -18,14 +20,22 @@ sql/                        <- Phần C (Quỳnh): PostgreSQL Staging, Star Sche
   ├── 04-dashboard-views.sql
   ├── 05-load-model-scores.sql
   ├── olap_queries.sql
+  ├── dashboard_virtual_datasets_mong.sql <- Truy vấn Dataset ảo trên Kho PostgreSQL cho Superset (Phần E)
   ├── run_warehouse.ps1     <- Runner PowerShell (01 -> 02 -> 03 -> 05)
   ├── run_olap_and_views.ps1<- Runner PowerShell (04 -> olap_queries)
   ├── run_all.sh            <- Runner Bash cho Linux / macOS / WSL
   └── run_pipeline.py       <- Runner Python đa nền tảng + Sinh ảnh ERD PNG 300 DPI
+dashboard/                  <- Phần E (Mong & Khang): Gói xuất Apache Superset (.zip) & ảnh chụp Dashboard / SQL Lab (Phụ lục B)
+  ├── dashboard_export_superset.zip
+  ├── fig05_dashboard_overview.png
+  ├── fig06_dashboard_filtered.png
+  └── fig07_sqllab_reconciliation.png
 outputs/                    <- data_audit_summary.md, decision_log.csv, processed_data_dictionary.md,
                                star_schema_erd.md, warehouse_validation_report.md,
-                               olap_and_handover_summary.md, postgres_execution_log.txt, model_scores_warehouse.csv, ...
-figures/                    <- fig01..03 (EDA Phần A), fig04_amount_transform.png (Phần B), fig04_star_schema_erd.png (ERD Phần C)
+                               olap_and_handover_summary.md, postgres_execution_log.txt,
+                               cv_5fold_spread_summary.csv, error_examples_fp_fn_day1.csv, model_scores_warehouse.csv, ...
+figures/                    <- fig01..03 (EDA Phần A), fig04_amount_transform.png (Phần B), fig04_star_schema_erd.png (ERD Phần C),
+                               fig05_error_analysis_by_amount_band.png (Phân tích lỗi Phần E), fig05..07 (Superset Dashboard)
 ```
 
 ## 1. Chạy lại Phần A (Khang — Dữ liệu & Audit)
@@ -86,10 +96,10 @@ cd notebooks && jupyter lab        # mở 03_anomaly_detection.ipynb → Kernel 
 ```
 - Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/huy_experiment_log.md` và `outputs/anomaly_scores_test.csv`.
 
-## 4. Chạy lại Phần E (Mong & Khang — Phân lớp có giám sát, Đối sánh 2 họ mô hình & Dashboard Superset)
+## 4. Chạy lại Phần E (Mong & Khang — Phân lớp có giám sát, 5-Fold CV, Đối sánh 2 họ mô hình & Dashboard Superset)
 ```bash
 cd notebooks && jupyter lab        # mở 04_supervised_classification.ipynb → Kernel > Restart & Run All
 ```
-- Notebook tự động sinh bảng kết quả phân lớp (`outputs/classification_results.csv`, `outputs/classification_validation.csv`), bảng đối sánh hai họ mô hình trên cả 2 giao thức chia tập (`outputs/model_family_comparison_random_test.csv`, `outputs/model_family_comparison_temporal_test.csv`) và file điểm tích hợp kho PostgreSQL (`outputs/model_scores_warehouse.csv` — `139,490` dòng Test Ngày 1).
+- Notebook tự động sinh bảng kết quả phân lớp (`outputs/classification_results.csv`, `outputs/classification_validation.csv`), bảng độ dao động `mean ± sd` qua 5-fold Stratified CV (`outputs/cv_5fold_spread_summary.csv`), phân tích lỗi & ví dụ giao dịch FP/FN (`figures/fig05_error_analysis_by_amount_band.png`, `outputs/error_examples_fp_fn_day1.csv`), bảng đối sánh hai họ mô hình (`outputs/model_family_comparison_random_test.csv`, `outputs/model_family_comparison_temporal_test.csv`) và file điểm tích hợp kho PostgreSQL (`outputs/model_scores_warehouse.csv` — `139,490` dòng Test Ngày 1).
 - Sau khi chạy `sql/05-load-model-scores.sql`, kết quả đối soát trên `Fact_Transaction` đạt: `sup_caught_fraud = 93`, `iforest_caught_fraud = 31`, `lof_caught_fraud = 30` (khớp 100% giữa Python, PostgreSQL và thẻ Big Number trên Apache Superset).
-- Ảnh chụp Dashboard và SQL Lab lưu tại `figures/fig05_dashboard_overview.png`, `figures/fig06_dashboard_filtered.png`, `figures/fig07_sqllab_reconciliation.png`; gói xuất Dashboard lưu tại `outputs/dashboard_export_superset.zip`. Xem hướng dẫn chi tiết tại `README_E_Mong.md`.
+- Toàn bộ gói xuất Dashboard (`.zip`) và ảnh chụp Dashboard / SQL Lab được lưu chuẩn tại thư mục `dashboard/` (`dashboard/dashboard_export_superset.zip`, `dashboard/fig05_dashboard_overview.png`, `dashboard/fig06_dashboard_filtered.png`, `dashboard/fig07_sqllab_reconciliation.png`) theo Phụ lục B của mẫu báo cáo (đồng thời giữ bản sao trong `outputs/` và `figures/`). Xem hướng dẫn chi tiết tại `README_E_Mong.md`.
