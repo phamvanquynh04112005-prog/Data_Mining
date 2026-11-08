@@ -2,6 +2,8 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+outputs/classification_scores_test.csv
+review_fixes/
 .venv/
 __pycache__/
 .ipynb_checkpoints/
