@@ -12,6 +12,9 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 export PGCLIENTENCODING="UTF8"
+# LƯU Ý BẢO MẬT: Tài khoản/mật khẩu mặc định (dm/dm) dưới đây CHỈ DÙNG CHO
+# môi trường sandbox PostgreSQL cục bộ trên máy cá nhân khi chấm/tái lập đồ án.
+# Có thể ghi đè qua biến môi trường PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE.
 export PGPASSWORD="${PGPASSWORD:-dm}"
 PGHOST="${PGHOST:-localhost}"
 PGPORT="${PGPORT:-5432}"

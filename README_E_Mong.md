@@ -122,7 +122,7 @@
 
 ## 4. Thiết kế Dashboard Apache Superset (Đọc trực tiếp từ Kho dữ liệu PostgreSQL Star Schema)
 
-Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** gồm 5 biểu đồ và 1 bộ lọc, toàn bộ truy vấn định nghĩa tại `sql/dashboard_virtual_datasets_mong.sql` và đóng gói tại `dashboard/dashboard_export_superset.zip`:
+Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** gồm 5 biểu đồ cốt lõi (và 2 biểu đồ mở rộng cho phân phối điểm IF/LOF cùng diễn biến theo giờ tương đối `rel_hour`) và 1 bộ lọc, toàn bộ truy vấn định nghĩa tại `sql/dashboard_virtual_datasets_mong.sql` và đóng gói tại `dashboard/dashboard_export_superset.zip`:
 
 | # | Tên biểu đồ | Loại biểu đồ | Câu hỏi nghiệp vụ trả lời | Bảng / View Kho PostgreSQL (Quỳnh - C) | Số liệu đối soát chuẩn |
 |---|---|---|---|---|---|
@@ -131,6 +131,8 @@ Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** gồm 5 biểu đồ
 | **3** | Phân bố xác suất Random Forest theo nhãn thực | Bar Chart (Log scale) | Điểm mô hình có tách biệt được gian lận khỏi hợp pháp không? | `Fact_Transaction` (`vw_dash_05_score_distribution`) | Tổng số dòng khớp `139.490` giao dịch Test Ngày 1 |
 | **4** | Giao dịch gian lận được bắt và bỏ sót theo dải số tiền | Stacked Bar Chart | Mô hình bắt tốt và bỏ sót nhiều ở dải số tiền nào? | `Fact_Transaction` JOIN `Dim_AmountBand` (`vw_dash_02`) | Khớp 100% bảng 7 dải tiền ở Notebook 04 §8 (tổng bắt `93`, bỏ sót `108`) |
 | **5** | So sánh 2 họ mô hình & Baseline: PR-AUC, Precision@100, Recall@100 | Grouped Bar | Họ có giám sát vượt trội ra sao so với phát hiện bất thường và baseline? | `vw_dash_06_model_vs_baseline_comparison` | Gồm đủ `RF`, `LogReg`, `HistGB`, `LOF`, `Isolation Forest`, `Max\|V*\|` và `Random` |
+| **6** | Phân phối điểm bất thường Isolation Forest & LOF theo phân vị (Ngày 1) | Line / Bar Chart | Điểm bất thường của họ mô hình chính (`iforest_score`, `lof_score`) phân bố ra sao qua 10 decile rủi ro? | `Fact_Transaction` (`Dataset 5` trong `dashboard_virtual_datasets_mong.sql`) | Decile 01 (`Top 10%` rủi ro nhất) tập trung **`183/201` gian lận (`91,04%`)** |
+| **7** | Gian lận thực tế & bắt được trong Top-100 theo Giờ tương đối (`rel_hour`) | Bar / Time-Series Chart | Gian lận và hiệu quả bắt Top-100 biến động thế nào qua 24 giờ tương đối của Ngày 1 (`rel_hour = 24..47`)? | `Fact_Transaction` JOIN `Dim_Hour` (`vw_dash_02_hourly_fraud_heatmap` / `Dataset 6`) | Tổng `201` gian lận Ngày 1; bắt `93` (RF), `31` (IForest), `30` (LOF) |
 
 - **Bộ lọc (Filter):** `Dải số tiền` (`dai_amount` từ `Dim_AmountBand`) áp dụng tương tác cho Biểu đồ 1 và Biểu đồ 4.
 

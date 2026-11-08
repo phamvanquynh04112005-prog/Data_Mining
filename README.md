@@ -94,7 +94,7 @@ Kết quả đúng khi:
 ```bash
 cd notebooks && jupyter lab        # mở 03_anomaly_detection.ipynb → Kernel > Restart & Run All
 ```
-- Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/huy_experiment_log.md` và `outputs/anomaly_scores_test.csv`.
+- Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/anomaly_temporal_day1_results.csv`, `outputs/anomaly_5fold_cv_summary.csv`, `outputs/anomaly_scores_test.csv` và `figures/fig04c_anomaly_detection_results.png`.
 
 ## 4. Chạy lại Phần E (Mong & Khang — Phân lớp có giám sát, 5-Fold CV, Đối sánh 2 họ mô hình & Dashboard Superset)
 ```bash

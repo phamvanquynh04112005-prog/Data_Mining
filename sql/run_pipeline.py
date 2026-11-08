@@ -7,6 +7,11 @@ rendering figures/fig04_star_schema_erd.png (2400x1600) and executing all 6 SQL 
 Usage from project root:
     python sql/run_pipeline.py             # Generates figures/fig04_star_schema_erd.png and runs 6 SQL scripts
     python sql/run_pipeline.py --erd-only  # Only generates figures/fig04_star_schema_erd.png
+
+Security Note:
+    Default PostgreSQL credentials (PGUSER=dm, PGPASSWORD=dm on localhost:5432/dm_course)
+    are strictly for local personal sandbox/course evaluation and can be overridden via
+    environment variables (PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE).
 """
 
 import argparse

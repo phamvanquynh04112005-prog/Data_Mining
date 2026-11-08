@@ -103,7 +103,61 @@ WHERE date_key = 1
 ORDER BY "PR_AUC" DESC;
 
 -- =====================================================================
--- 5) Truy vấn đối soát trên SQL Lab (kỳ vọng: sup_caught_fraud = 93,
+-- 5) Dataset "vw_superset_anomaly_score_distribution_day1" (trích trực tiếp từ Fact_Transaction):
+--    Phân phối điểm bất thường của Họ bài toán chính (Isolation Forest: iforest_score,
+--    LOF: lof_score) và xác suất Random Forest theo 10 phân vị (Decile 1..10) trên Ngày 1.
+--    Phục vụ Biểu đồ: "Phân phối điểm bất thường Isolation Forest & LOF theo phân vị (Ngày 1)".
+-- =====================================================================
+WITH deciled AS (
+  SELECT
+    NTILE(10) OVER (ORDER BY f.iforest_score DESC, f.txn_id ASC) AS phan_vi_diem,
+    f.is_fraud,
+    f.iforest_score,
+    f.lof_score,
+    f.sup_prob_score
+  FROM public.Fact_Transaction f
+  WHERE f.date_key = 1
+    AND f.is_duplicate = FALSE
+    AND f.iforest_score IS NOT NULL
+)
+SELECT
+  phan_vi_diem,
+  'Decile ' || LPAD(phan_vi_diem::text, 2, '0') || CASE WHEN phan_vi_diem = 1 THEN ' (Top 10% rủi ro nhất)' WHEN phan_vi_diem = 10 THEN ' (10% an toàn nhất)' ELSE '' END AS nhom_phan_vi,
+  COUNT(*) AS so_giao_dich,
+  SUM(is_fraud) AS gian_lan,
+  ROUND(100.0 * SUM(is_fraud)::numeric / NULLIF(COUNT(*), 0), 4) AS ty_le_gian_lan_pct,
+  ROUND(AVG(iforest_score)::numeric, 6) AS diem_tb_iforest,
+  ROUND(AVG(lof_score)::numeric, 6) AS diem_tb_lof,
+  ROUND(AVG(sup_prob_score)::numeric, 6) AS xac_suat_tb_rf
+FROM deciled
+GROUP BY phan_vi_diem
+ORDER BY phan_vi_diem ASC;
+
+-- =====================================================================
+-- 6) Dataset "vw_superset_hourly_fraud_day1" (trích từ Fact_Transaction JOIN Dim_Hour / vw_dash_02_hourly_fraud_heatmap):
+--    Diễn biến số giao dịch, tổng gian lận và số gian lận bắt được trong Top-100 của cả 2 họ mô hình
+--    theo Giờ tương đối (rel_hour = 24..47, giờ trong chu kỳ 00h..23h của Ngày 1).
+--    Phục vụ Biểu đồ: "Gian lận thực tế và bắt được trong Top-100 theo Giờ tương đối (Ngày 1)".
+-- =====================================================================
+SELECT
+  h.hour_key AS rel_hour,
+  h.rel_hour_label AS gio_tuong_doi,
+  h.hour_in_rel_day AS gio_trong_ngay,
+  COUNT(*) AS so_giao_dich,
+  SUM(f.is_fraud) AS tong_gian_lan,
+  ROUND(100.0 * SUM(f.is_fraud)::numeric / NULLIF(COUNT(*), 0), 4) AS ty_le_gian_lan_pct,
+  SUM(CASE WHEN f.is_fraud = 1 AND f.sup_daily_rank <= 100 THEN 1 ELSE 0 END) AS rf_bat_duoc_top100,
+  SUM(CASE WHEN f.is_fraud = 1 AND f.iforest_daily_rank <= 100 THEN 1 ELSE 0 END) AS iforest_bat_duoc_top100,
+  SUM(CASE WHEN f.is_fraud = 1 AND f.lof_daily_rank <= 100 THEN 1 ELSE 0 END) AS lof_bat_duoc_top100
+FROM public.Fact_Transaction f
+JOIN public.Dim_Hour h ON h.hour_key = f.hour_key
+WHERE f.date_key = 1
+  AND f.is_duplicate = FALSE
+GROUP BY h.hour_key, h.rel_hour_label, h.hour_in_rel_day
+ORDER BY h.hour_key ASC;
+
+-- =====================================================================
+-- 7) Truy vấn đối soát trên SQL Lab (kỳ vọng: sup_caught_fraud = 93,
 --    iforest_caught_fraud = 31, lof_caught_fraud = 30 trên 201 gian lận Ngày 1 đã khử trùng):
 -- =====================================================================
 SELECT

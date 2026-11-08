@@ -32,8 +32,8 @@ Giới hạn của bằng chứng: hai ảnh chụp không bao gồm thanh đị
 Không ghi DOI hay tên tác giả cá nhân, vì metadata Kaggle để trống. Mô tả dài của dataset nêu bối cảnh hợp tác Worldline – ULB và danh sách tài liệu liên quan; nếu nhóm muốn trích, hãy chép từ phần "Giới thiệu về tập dữ liệu" của trang.
 
 ## 4. Lưu ý sử dụng (hiểu biết chung, không phải tư vấn pháp lý)
-Trang Kaggle không nêu điều khoản chi tiết, nên phần này không phải điều khoản đọc trên trang. ODbL thường kèm yêu cầu ghi nguồn và chia sẻ lại cùng giấy phép nếu công bố công khai một cơ sở dữ liệu phái sinh. Để thận trọng: ghi nguồn đầy đủ; không đăng công khai dữ liệu thô hay kho dữ liệu dẫn xuất; nộp kho PostgreSQL chỉ cho giảng viên. Nếu có nghi ngờ về việc dùng trong lớp, hỏi giảng viên.
+Trang Kaggle không nêu điều khoản chi tiết, nên phần này không phải điều khoản đọc trên trang. ODbL thường kèm yêu cầu ghi nguồn và chia sẻ lại cùng giấy phép nếu công bố công khai một cơ sở dữ liệu phái sinh. Để tuân thủ chặt chẽ: ghi nguồn đầy đủ theo Mục 3; không đăng công khai dữ liệu giao dịch thô (`data/raw/creditcard.csv`) hay bảng đặc trưng dẫn xuất chứa `Time`, `Amount`, `V1..V28` (`data/processed/transactions_processed.csv`, `outputs/classification_scores_test.csv`). Các tệp điểm mô hình phục vụ chấm tự động Kho dữ liệu PostgreSQL (`outputs/model_scores_warehouse.csv`, `outputs/anomaly_scores_test.csv`) chỉ lưu chỉ số dòng `txn_id` và điểm số đầu ra của thuật toán (không chứa bất kỳ thuộc tính gốc `Time`, `Amount` hay `V1..V28` nào của bộ dữ liệu).
 
 ## 5. Quy định vận hành liên quan
-- Không commit dữ liệu thô (`.gitignore` đã chặn `data/raw/*`).
+- Không commit dữ liệu thô và bảng đặc trưng (`.gitignore` đã chặn `data/raw/*`, `data/processed/*` và `outputs/classification_scores_test.csv`).
 - Mỗi thành viên tự tải từ Kaggle và đối chiếu sha256 `76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89`.
