@@ -58,9 +58,9 @@
 | Mô hình | Val PR-AUC (`K_VAL=20`) | Test PR-AUC | Precision@100 | Recall@100 | TP (Bắt đúng) | FP (Báo động giả) | FN (Bỏ sót) |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | **Random Forest** (`n_estimators=200, min_samples_leaf=1`) — *Chọn từ Val* | **0,8703** | **0,7843** | 0,9300 | 0,4627 | 93 | 7 | 108 |
-| **Logistic Regression** (`C=1.0`) | 0,7627 | 0,7239 | 0,9400 | 0,4677 | 94 | 6 | 107 |
-| **HistGradientBoosting** (`max_depth=4, lr=0.1`) | 0,8030 | 0,6727 | 0,9500 | 0,4726 | 95 | 5 | 106 |
-| **Xếp hạng ngẫu nhiên (TB 100 lần)** | 0,0023 | 0,0015 | 0,0015 | 0,0007 | 0,15 | 99,85 | 200,85 |
+| **Logistic Regression** (`C=1.0`) | 0,6840 | 0,7239 | 0,9400 | 0,4677 | 94 | 6 | 107 |
+| **HistGradientBoosting** (`max_depth=4, lr=0.1`) | 0,8478 | 0,6727 | 0,9500 | 0,4726 | 95 | 5 | 106 |
+| **Xếp hạng ngẫu nhiên (TB 100 lần)** | — | 0,0015 | 0,0015 | 0,0007 | 0,15 | 99,85 | 200,85 |
 
 - **Diễn giải theo câu hỏi nghiệp vụ:** Với ngân sách rà soát tối đa `100` giao dịch/ngày, trần lý thuyết `Recall@100` ở Ngày 1 (sau khử trùng `DQ-01`) là `100 / 201 = 49,75%` (hoặc `100 / 211 = 47,39%` trước khử trùng). Cả 3 mô hình có giám sát bắt được **`93–95` giao dịch gian lận** trong Top 100 (`Recall@100 = 46,3% – 47,3%`), đạt **~93% – 95% mức trần lý thuyết**. `Random Forest` được chọn làm mô hình chính nhờ `PR-AUC` cao nhất trên Validation (`0,8703`) và tiếp tục dẫn đầu về `PR-AUC` trên Test Ngày 1 (`0,7843`).
 
@@ -91,7 +91,7 @@
   - Dải `500-1000`: `2.926` GD, `13` gian lận -> bắt `3` (`23,1%`), bỏ sót `10`.
   - Dải `>1000`: `1.390` GD, `4` gian lận -> bắt `0` (`0,0%`), bỏ sót `4` (cỡ mẫu gian lận quá nhỏ).
 - **Ví dụ giao dịch cụ thể bị cảnh báo nhầm (FP) và bị bỏ sót (FN) (`outputs/error_examples_fp_fn_day1.csv`):**
-  - **Ca FP điển hình:** `txn_id = 149865` (Giờ tương đối `25`, `Amount = 1,00`, dải `0-10`, hạng `#28`, `sup_prob_score = 0,9250`, `lof_score = 2,0768`) và `txn_id = 163770` (Giờ tương đối `32`, `Amount = 19,99`, dải `10-50`, hạng `#58`, `sup_prob_score = 0,8600`, `lof_score = 3,9965`) — giao dịch hợp pháp nhưng mang tổ hợp PCA giống mẫu thử thẻ nên cả hai họ mô hình đều chấm điểm rủi ro cao.
+  - **Ca FP điển hình:** `txn_id = 149865` (Giờ tương đối `25`, `Amount = 1,00`, dải `0-10`, hạng `#28`, `sup_prob_score = 0,9250`, `lof_score = 2,0768`) và `txn_id = 163770` (Giờ tương đối `32`, `Amount = 19,99`, dải `10-50`, hạng `#58`, `sup_prob_score = 0,8600`, `lof_score = 3,9965`) — giao dịch hợp pháp nhưng được Random Forest chấm điểm rủi ro cao (`0,86 – 0,93`) nên lọt vào Top-100.
   - **Ca FN điển hình:** `txn_id = 237108` (Giờ tương đối `41`, `Amount = 0,00`, gian lận xác thực thẻ `0` đồng, đạt `sup_prob_score = 0,7050` ở hạng `#101` — bị loại sát nút ngay dưới ngưỡng cắt ngân sách `K = 100`) và `txn_id = 176050` (Giờ tương đối `34`, `Amount = 2.125,87`, dải `>1000`, `sup_prob_score = 0,0000`, `lof_score = -0,2423` — gian lận giá trị lớn nhưng nằm sâu trong vùng mật độ giao dịch bình thường trên không gian `V1..V28`).
 
 ### 3.4. Đối sánh hai họ mô hình trên `split_random` & `split_temporal` (Mục E7 & E8)
