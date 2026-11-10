@@ -79,6 +79,8 @@ Mô tả cột lấy từ mô tả công khai của dataset (qua các trang mirr
 
 ## 8. Khai báo sử dụng AI (Tiêu chí 10)
 
+> **Bảng khai báo AI hợp nhất (chính thức) của cả nhóm:** `outputs/ai_usage_declaration.md` (có cột “Phần nào là của nhóm” và cam kết). Mục dưới đây là bản chi tiết của phần này.
+
 | Công cụ / dịch vụ | Mục đích sử dụng | Phần áp dụng (tệp / mục) | Cách nhóm kiểm chứng kết quả |
 |---|---|---|---|
 | **Claude (Anthropic) và Gemini / Google Antigravity** | Gợi ý khung code kiểm toán, rà soát logic EDA, định dạng bảng và cấu trúc báo cáo | `notebooks/01_data_audit.ipynb`, `outputs/data_dictionary.csv`, `outputs/data_audit_summary.md`, `outputs/quality_issues.csv` | Khang chạy lại toàn bộ notebook trên dữ liệu thật cục bộ; đối chiếu số dòng, tỷ lệ lớp, thống kê mô tả, checksum và các tệp đầu ra với `outputs/audit_metrics.json` |

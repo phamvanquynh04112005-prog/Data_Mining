@@ -87,6 +87,8 @@ Toàn bộ 15/15 bài kiểm tra tự động trong `notebooks/02_preprocessing.
 ---
 
 ## 6. Khai báo sử dụng AI cho Phần B (Tiêu chí 10)
+
+> **Bảng khai báo AI hợp nhất (chính thức) của cả nhóm:** `outputs/ai_usage_declaration.md` (có cột “Phần nào là của nhóm” và cam kết). Mục dưới đây là bản chi tiết của phần này.
 - **Công cụ sử dụng:** Claude (Anthropic) và Gemini / Google Antigravity.
 - **Phạm vi AI hỗ trợ:** Gợi ý cấu trúc hóa module `src/preprocessing.py`, viết bộ 15 hàm kiểm tra chống rò rỉ dữ liệu (`leakage_checks`) trong `notebooks/02_preprocessing.ipynb` và định dạng bảng `outputs/decision_log.csv`.
 - **Phần do sinh viên (Cường) tự thực hiện và kiểm chứng:** Tự phân tích bằng chứng từ báo cáo Audit của Khang (A), trực tiếp đưa ra 11 quyết định kỹ thuật (`D-01` → `D-11`), tự phát hiện 12.446 dòng trùng đặc trưng `V1..V28 + Amount` nhưng khác `Time` (`D-11`), trực tiếp chạy `python src/preprocessing.py` và `notebooks/02_preprocessing.ipynb` trên máy cá nhân (Python 3.13.16) và kiểm tra mã băm `sha256` trước/sau khi chạy. Không tải dữ liệu giao dịch thô lên bất kỳ dịch vụ đám mây hay bên thứ ba nào.

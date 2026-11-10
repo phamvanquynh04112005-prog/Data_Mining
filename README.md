@@ -94,7 +94,16 @@ Kết quả đúng khi:
 ```bash
 cd notebooks && jupyter lab        # mở 03_anomaly_detection.ipynb → Kernel > Restart & Run All
 ```
-- Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/anomaly_temporal_day1_results.csv`, `outputs/anomaly_5fold_cv_summary.csv`, `outputs/anomaly_scores_test.csv` và `figures/fig04c_anomaly_detection_results.png`.
+- Chi tiết thực nghiệm và kết quả xem tại `outputs/huy_anomaly_detection_report.md`, `outputs/anomaly_temporal_day1_results.csv`, `outputs/anomaly_5fold_cv_summary.csv`, `outputs/anomaly_scores_test.csv`, `outputs/anomaly_typical_examples_day1.csv` (giao dịch điển hình, mục 5.3) và `figures/fig04c_anomaly_detection_results.png`.
+- Kết quả đúng khi: Ngày 1 (201 gian lận) Isolation Forest bắt **31**, LOF **30**, heuristic **10** trong Top-100; LOF 5-fold `Precision@100 = 47,20% ± 2,59%`.
+
+## Quy ước tính ngẫu nhiên (seed)
+- Mọi mô hình và phép lấy mẫu dùng **`random_state = 42`** (chia tập trong `src/preprocessing.py`, Isolation Forest, Random Forest, mẫu 20.000 dòng của LOF, baseline ngẫu nhiên).
+- Trong 5-fold CV, mẫu con của LOF dùng `42 + fold_id` (`fold_id = 0..4`) để mỗi fold có mẫu khác nhau nhưng vẫn tái lập được; Huy (D) và Mong (E) dùng cùng quy ước nên ra cùng kết quả.
+- Baseline ngẫu nhiên lấy trung bình 100 lần xáo trộn từ một bộ sinh `np.random.default_rng(42)`; trong 5-fold CV của Mong, baseline ngẫu nhiên dùng `42 + 100 + fold_id` để không trùng chuỗi số với mẫu LOF.
+
+## Khai báo sử dụng AI
+Bảng hợp nhất của cả nhóm (có cột “Phần nào là của nhóm” và cam kết): `outputs/ai_usage_declaration.md`.
 
 ## 4. Chạy lại Phần E (Mong & Khang — Phân lớp có giám sát, 5-Fold CV, Đối sánh 2 họ mô hình & Dashboard Superset)
 ```bash

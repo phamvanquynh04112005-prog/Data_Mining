@@ -183,6 +183,8 @@ Danh sách tệp bàn giao tại thư mục `dashboard/` (theo đúng cấu trú
 
 ## 7. Khai báo sử dụng AI (Tiêu chí 10)
 
+> **Bảng khai báo AI hợp nhất (chính thức) của cả nhóm:** `outputs/ai_usage_declaration.md` (có cột “Phần nào là của nhóm” và cam kết). Mục dưới đây là bản chi tiết của phần này.
+
 - **Công cụ sử dụng:** Claude (Anthropic) và Gemini (Google Antigravity).
 - **Mục đích sử dụng:** Hỗ trợ rà soát sự đồng bộ giao thức giữa các nhánh (`feature/cuong-preprocessing`, `feature/huy-anomaly-detection`, `main`), cấu trúc hóa mã nguồn `notebooks/04_supervised_classification.ipynb` (bao gồm 5-Fold Stratified CV và phân tích lỗi FP/FN), viết truy vấn SQL kết nối Star Schema cho Apache Superset và biên tập tài liệu bàn giao `README_E_Mong.md`.
 - **Phần do sinh viên kiểm tra và chịu trách nhiệm:** Toàn bộ mã nguồn được thực thi trực tiếp trên dữ liệu thật `creditcard.csv` (`sha256: 76274b69…98551a89`) và `transactions_processed.csv` (`sha256: e8bf7dcd…93628958`) tại máy cá nhân; toàn bộ chỉ số (`PR-AUC`, `Precision@100`, `Recall@100`, `mean ± sd` qua 5 fold, phân tích lỗi theo dải tiền) được đối soát khớp 100% giữa Notebook, PostgreSQL `Fact_Transaction` và SQL Lab; không tải dữ liệu giao dịch thô lên dịch vụ bên thứ ba.

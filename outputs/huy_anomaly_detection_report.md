@@ -36,7 +36,7 @@
 
 | Phương pháp / Thuật toán | Loại mô hình | Cấu hình tham số & Quy mô huấn luyện |
 |---|---|---|
-| **Baseline 1: Xếp hạng ngẫu nhiên** | Đường cơ sở ngẫu nhiên | Chọn ngẫu nhiên `K = 100` giao dịch (trung bình kỳ vọng qua 100 lần chạy với `seed = 0..99`). |
+| **Baseline 1: Xếp hạng ngẫu nhiên** | Đường cơ sở ngẫu nhiên | Chọn ngẫu nhiên `K = 100` giao dịch (lấy trung bình qua 100 lần xáo trộn sinh từ **một** bộ sinh `np.random.default_rng(42)`, thống nhất `random_state = 42` với toàn bộ notebook). |
 | **Baseline 2: Heuristic $\max(\|V_1..V_{28}\|)$** | Luật ngưỡng không giám sát | Điểm bất thường $s(x) = \max_{j \in \{1..28\}} \|V_j\|$, không cần huấn luyện, chọn Top-100 điểm cao nhất. |
 | **Mô hình 1: Isolation Forest** | Cây cô lập không giám sát | `n_estimators=100`, `contamination='auto'`, `random_state=42`, `n_jobs=-1`; huấn luyện trên **toàn bộ tập Train** (`144.236` dòng ở `split_temporal`; `170.235` dòng ở `split_random`). |
 | **Mô hình 2: Local Outlier Factor (LOF)** | Mật độ lân cận cục bộ | `novelty=True`, `n_neighbors=100` (chọn qua Validation), `n_jobs=-1`; huấn luyện trên **`20.000` mẫu ngẫu nhiên** từ tập Train đã chuẩn hóa (`seed=42`) để đảm bảo độ phức tạp tính toán bậc hai $O(N^2)$ khả thi. |
@@ -65,7 +65,7 @@ Trên tập kiểm tra **Ngày 1 (`139.490` giao dịch sạch, `201` giao dịc
 
 | Phương pháp / Mô hình | Fraud Top-100 (`TP`) | Cảnh báo nhầm (`FP`) | Bỏ sót (`FN`) | `Precision@100` (%) | `Recall@100` (%) (trên 201 fraud) | `PR-AUC` (AP) | Hệ số nâng (Lift so với ngẫu nhiên) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| **Baseline 1: Xếp hạng ngẫu nhiên (TB 100 lần)** | 0,16 | 99,84 | 199,84 | 0,16% | 0,08% | 0,0015 | 1,0× |
+| **Baseline 1: Xếp hạng ngẫu nhiên (TB 100 lần)** | 0,16 | 99,84 | 200,84 | 0,16% | 0,08% | 0,0015 | 1,0× |
 | **Baseline 2: Heuristic $\max(\|V_1..V_{28}\|)$** | 10 | 90 | 191 | 10,00% | 4,98% | 0,0571 | ~69,4× |
 | **Isolation Forest (`n_estimators=100`)** | **31** | **69** | **170** | **31,00%** | **15,42%** | 0,1582 | **~215,3×** |
 | **LOF (`n_neighbors=100`, `novelty=True`)** | **30** | **70** | **171** | **30,00%** | **14,93%** | **0,2478** | **~208,3×** |
@@ -92,7 +92,7 @@ Kết quả trên tập **Validation (`56.745` dòng, `94` gian lận)** và **T
 |---|---|---:|---:|---:|---:|---:|---:|
 | **Validation (`94` fraud)** | Isolation Forest | 29 | 71 | 65 | 29,00% | 30,85% | 0,2674 |
 | **Validation (`94` fraud)** | LOF (`n_neighbors=100`) | **49** | **51** | **45** | **49,00%** | **52,13%** | **0,4708** |
-| **Test (`95` fraud)** | Baseline 1: Ngẫu nhiên (TB 100 lần) | 0,18 | 99,82 | 94,82 | 0,18% | 0,19% | 0,0017 |
+| **Test (`95` fraud)** | Baseline 1: Ngẫu nhiên (TB 100 lần, `default_rng(42)`) | 0,15 | 99,85 | 94,85 | 0,15% | 0,16% | 0,0017 |
 | **Test (`95` fraud)** | Baseline 2: Heuristic $\max(\|V_1..V_{28}\|)$ | 21 | 79 | 74 | 21,00% | 22,11% | 0,1045 |
 | **Test (`95` fraud)** | Isolation Forest | 27 | 73 | 68 | 27,00% | 28,42% | 0,1609 |
 | **Test (`95` fraud)** | LOF (`n_neighbors=100`) | **38** | **62** | **57** | **38,00%** | **40,00%** | **0,3125** |
@@ -100,6 +100,27 @@ Kết quả trên tập **Validation (`56.745` dòng, `94` gian lận)** và **T
 > **Giải thích thận trọng về sự khác biệt giữa hai giao thức (`split_random` vs `split_temporal`):**
 > - Trên `split_random` và 5-Fold CV (khi dữ liệu Train và Test được lấy mẫu ngẫu nhiên phân tầng trên toàn bộ 2 ngày), LOF vượt trội rõ rệt so với Isolation Forest (`Precision@100 = 47,20% ± 2,59%` so với `23,60% ± 5,27%`), trong khi ở `split_temporal` (huấn luyện Ngày 0, kiểm tra Ngày 1), hai thuật toán cho kết quả xấp xỉ nhau ở Top-100 (`30` so với `31` gian lận).
 > - Sự chênh lệch này **gợi ý** hai nguyên nhân có thể đồng thời xảy ra: (1) có thể có sự dịch chuyển nhẹ về phân phối hành vi giao dịch giữa Ngày 0 và Ngày 1 (*covariate/concept shift* trong cửa sổ quan sát ngắn 48 giờ), và (2) trong tập dữ liệu tồn tại `12.446` giao dịch có vector đặc trưng `V1–V28` gần trùng hoặc trùng nhau nhưng khác `Time`/`Amount` (mã `DQ-01b` do Thành viên B — Cường phát hiện). Khi chia ngẫu nhiên (`split_random` / 5-Fold CV), các giao dịch có đặc trưng `V1–V28` gần trùng nhau này có cơ hội phân bổ vào cả Train lẫn Test, tạo lợi thế tự nhiên cho thuật toán dựa trên khoảng cách láng giềng cục bộ như LOF so với khi cắt nghiêm ngặt theo ranh giới ngày (`split_temporal`).
+
+### 4.4. Giao dịch điển hình của Isolation Forest / LOF (mục 5.3 của mẫu báo cáo)
+
+Lấy từ điểm Ngày 1 (`split_temporal`) đã tính ở Phần I, không huấn luyện lại — sinh bởi **Phần IV** của `notebooks/03_anomaly_detection.ipynb`, lưu tại `outputs/anomaly_typical_examples_day1.csv` (16 dòng). Cột “Lệch chuẩn lớn nhất” là 3 trục `V` có `|z|` lớn nhất (z tính theo trung bình và độ lệch chuẩn của Ngày 0).
+
+| Mô hình | Loại | `txn_id` | Hạng Ngày 1 | Giờ tương đối | Amount | Lệch chuẩn lớn nhất |
+|---|---|---:|---:|---:|---:|---|
+| Isolation Forest | Bắt đúng (TP) | 151007 | 2 | 26 | 1,00 | V7 = −26,8; V3 = −24,4; V10 = −21,2 |
+| Isolation Forest | Bắt đúng (TP) | 154372 | 4 | 28 | 2,28 | V7 = −31,9; V21 = −24,0; V8 = −23,8 |
+| LOF | Bắt đúng (TP) | 150655 | 4 | 26 | 0,01 | V17 = −22,9; V12 = −18,2; V14 = −16,5 |
+| LOF | Bắt đúng (TP) | 150666 | 6 | 26 | 209,65 | V17 = −25,7; V12 = −16,9; V16 = −14,2 |
+| Cả hai | Báo nhầm (FP) | 274772 | 1 / 1 | 46 | 25.691,16 | V7 = +104,1; V5 = −86,9; V27 = +83,1 |
+| Cả hai | Báo nhầm (FP) | 151297 | 12 / 2 | 26 | 18.910,00 | V20 = +53,1; V2 = −37,6; V23 = −28,1 |
+| Isolation Forest | Bỏ sót (FN) | 204080 | 109.996 | 37 | 108,51 | V3 = −2,1; V14 = −2,1; V13 = +1,4 |
+| LOF | Bỏ sót (FN) | 251882 | 115.190 | 43 | 3,14 | V14 = −3,3; V4 = +3,1; V16 = +2,2 |
+
+> **Nhận xét:**
+> - **Bắt đúng:** các ca gian lận đứng đầu đều lệch rất mạnh (|z| > 15) trên một nhóm nhỏ trục PCA, và thường có số tiền rất nhỏ (0,01 – 2,28). Hai mô hình dựa vào các trục khác nhau: IF chủ yếu ở `V7`, `V3`, `V10`; LOF ở `V17`, `V12`, `V14`.
+> - **Báo nhầm:** cả hai mô hình cùng xếp các giao dịch hợp lệ **số tiền rất lớn** (> 18.000) với độ lệch cực đoan (|z| tới 104) lên hạng 1–12. Đây là điểm yếu cố hữu của phương pháp không giám sát: “hiếm” không đồng nghĩa với “gian lận” (xem Mục 5, ý 1).
+> - **Bỏ sót:** các ca gian lận bị xếp cuối có |z| < 3,5 trên mọi trục, tức là trông giống hệt giao dịch bình thường trong không gian `V1–V28`. Không mô hình dựa trên mật độ hay cô lập nào bắt được những ca này nếu không có nhãn — lý do bổ sung nhánh có giám sát của Thành viên E (Mong).
+> - Không gán ý nghĩa nghiệp vụ cho từng trục `V*` (đã ẩn danh bằng PCA, quyết định `D-07`).
 
 ---
 
@@ -113,17 +134,20 @@ Kết quả trên tập **Validation (`56.745` dòng, `94` gian lận)** và **T
 
 ## 6. Danh mục Đầu ra Bàn giao của Thành viên D (Huy)
 
-- `notebooks/03_anomaly_detection.ipynb` — Notebook hoàn chỉnh (`19` ô gồm `16` ô code và `3` ô thuyết minh Markdown), trình bày giao thức chính (`split_temporal` & 5-Fold CV) trước giao thức phụ (`split_random`), chạy tuần tự từ đầu không lỗi, không có số gõ tay (hardcode).
+- `notebooks/03_anomaly_detection.ipynb` — Notebook hoàn chỉnh (`21` ô gồm `17` ô code và `4` ô thuyết minh Markdown; Phần IV xuất giao dịch điển hình), trình bày giao thức chính (`split_temporal` & 5-Fold CV) trước giao thức phụ (`split_random`), chạy tuần tự từ đầu không lỗi, không có số gõ tay (hardcode).
 - `outputs/anomaly_temporal_day1_results.csv` — Kết quả giao thức chính `split_temporal` (Ngày 0 $\rightarrow$ Ngày 1, ngân sách `K = 100/ngày`) cho 2 Baselines, Isolation Forest và LOF.
 - `outputs/anomaly_5fold_cv_summary.csv` & `outputs/anomaly_5fold_cv_per_fold.csv` — Kết quả kiểm định chéo 5-Fold (`mean ± sd` và chi tiết từng fold `0..4`, đồng nhất 100% với bảng tổng hợp của Thành viên E — Mong).
 - `outputs/lof_tuning_processed_validation.csv` — Bảng tinh chỉnh `n_neighbors` của LOF trên Validation.
 - `outputs/model_comparison_processed_validation.csv` & `outputs/model_error_analysis_processed_test.csv` — Kết quả Validation và phân tích lỗi `TP/FP/FN` trên Test (`split_random`).
 - `outputs/anomaly_scores_test.csv` — Điểm bất thường và thứ hạng của từng giao dịch Test (`split_random`).
+- `outputs/anomaly_typical_examples_day1.csv` — 16 giao dịch điển hình Ngày 1 (mỗi mô hình 3 TP, 3 FP, 2 FN) cho Mục 4.4 / mục 5.3 của mẫu báo cáo.
 - `figures/fig04c_anomaly_detection_results.png` — **Hình 4** của báo cáo (Panel A: Đường cong chọn `n_neighbors` của LOF trên Validation; Panel B: So sánh số gian lận bắt được ở Top-100 giữa `split_temporal` Ngày 1 và `split_random` Test).
 
 ---
 
 ## 7. Kê khai Sử dụng AI (Phụ lục A — Bảng A1, Phần của Thành viên D — Huy)
+
+> **Bảng khai báo AI hợp nhất (chính thức) của cả nhóm:** `outputs/ai_usage_declaration.md` (có cột “Phần nào là của nhóm” và cam kết). Mục dưới đây là bản chi tiết của phần này.
 
 | Thành viên | Công cụ AI đã sử dụng | Mục đích & Phạm vi sử dụng | Cách kiểm chứng & Xác nhận của thành viên |
 |---|---|---|---|

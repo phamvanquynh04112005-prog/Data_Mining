@@ -199,6 +199,8 @@ Script `05-load-model-scores.sql` sẽ tự động nạp vào `stg_model_scores
 
 ## 4. Khai Báo Sử Dụng AI Của Thành Viên C — Quỳnh (Chuẩn Bảng A1 — Phụ Lục A `report-template.md`)
 
+> **Bảng khai báo AI hợp nhất (chính thức) của cả nhóm:** `outputs/ai_usage_declaration.md` (có cột “Phần nào là của nhóm” và cam kết). Mục dưới đây là bản chi tiết của phần này.
+
 | Công cụ / dịch vụ | Mục đích sử dụng | Phần áp dụng (tệp / mục) | Cách nhóm kiểm chứng kết quả |
 | :--- | :--- | :--- | :--- |
 | **Gemini / Google Antigravity** | Hỗ trợ rà soát cú pháp SQL PostgreSQL (`ROLLUP`, `CUBE`, `GROUPING SETS`, `WINDOW FUNCTIONS`), viết runner đa nền tảng và kiểm tra đối soát toàn vẹn dữ liệu | `sql/01-staging.sql` → `sql/05-load-model-scores.sql`, `sql/olap_queries.sql`, `sql/run_pipeline.py`, `outputs/star_schema_erd.md`, `outputs/warehouse_validation_report.md`, `outputs/olap_and_handover_summary.md` | Chạy thực nghiệm trực tiếp trên PostgreSQL 16.15-5 (`dm_course`), đối chiếu từng con số (`284,807` dòng, `492` gian lận, `1,081` bản sao `DQ-01`, `139,490` dòng điểm mô hình Ngày 1, `201` gian lận Ngày 1, `31 / 30 / 93` ca bắt được) khớp 100% với `outputs/audit_metrics.json` và `outputs/preprocessing_checks.json` |
