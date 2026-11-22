@@ -2,11 +2,11 @@
 
 - **Người thực hiện:** Mong (Thành viên E — GitHub: `HHoaiMong`) & Khang (Thành viên A — Phối hợp hoàn tất E11, E13, E14)
 - **Nhánh làm việc:** `feature/mong-classification-dashboard`
-- **Ngày cập nhật:** 2026-11-07
+- **Ngày cập nhật:** 2026-11-22
 - **Trạng thái tổng thể:**
-  - **ĐÃ HOÀN THÀNH 100% (E1 → E14 & Đã rà soát/bổ sung toàn bộ 6 mục theo mẫu báo cáo mới `report-template.md`):**
+  - **ĐÃ HOÀN THÀNH 100% & ĐÃ KIỂM CHỨNG OFFLINE + ĐỒNG BỘ DB `dm_course` (22/11/2026):**
     - **E1 → E10, E12 (Mong):** Đồng bộ giao thức với Cường (B), Quỳnh (C), Huy (D); hoàn thiện và chạy lại sạch từ đầu `notebooks/04_supervised_classification.ipynb` (chọn `top_model` nghiêm ngặt trên tập Validation, bổ sung **5-Fold Stratified CV `mean ± sd`** tại Mục 9B cho Bảng 8 Mục 7.2, xuất biểu đồ phân tích lỗi `figures/fig05_error_analysis_by_amount_band.png` và bảng ví dụ giao dịch FP/FN cụ thể `outputs/error_examples_fp_fn_day1.csv` cho Mục 7.3); xuất file điểm `outputs/model_scores_warehouse.csv` đúng chuẩn kho PostgreSQL của Quỳnh (E9).
-    - **E11, E13, E14 & Nâng cấp Dashboard (Mong & Khang):** Đã khởi chạy container PostgreSQL 16 (`superset_db`) và Apache Superset 6.0.0 (`superset_app`), thực thi trọn vẹn 6 script SQL của Quỳnh (`01-staging.sql` → `02-star-schema.sql` → `03-transform.sql` → `05-load-model-scores.sql` → `04-dashboard-views.sql` → `olap_queries.sql`); nâng cấp toàn bộ Dataset ảo của Dashboard (`sql/dashboard_virtual_datasets_mong.sql` và `dashboard/dashboard_export_superset.zip`) đọc trực tiếp 100% từ **Star Schema & Views PostgreSQL** (`Fact_Transaction`, `Dim_AmountBand`, `vw_dash_04_top100_review_queue`, `vw_dash_06_model_vs_baseline_comparison`), đưa cả **2 họ mô hình (`Supervised` + `Isolation Forest` + `LOF`) & Baseline** lên biểu đồ so sánh, hiển thị giờ tương đối (`rel_hour_label`) thay cho giây thô `Time`, thống nhất mẫu số `201` gian lận Ngày 1 đã khử trùng, và lưu trọn bộ đóng gói vào thư mục gốc `dashboard/` theo Phụ lục B của `report-template.md`.
+    - **E11, E13, E14 & Kiểm chứng On-Premise / Đồng bộ `dm_course` (Mong & Khang):** Đã khởi chạy container PostgreSQL 16 (`superset_db`) và Apache Superset 6.0.0 (`superset_app`), tạo và nạp trọn vẹn Kho dữ liệu vào database **`dm_course`** (user `dm`) bằng 6 script SQL của Quỳnh (`01-staging.sql` → `02-star-schema.sql` → `03-transform.sql` → `05-load-model-scores.sql` → `04-dashboard-views.sql` → `olap_queries.sql`); đồng bộ 100% 6 Virtual Datasets của Dashboard sang kết nối **`dm_course`** (`postgresql+psycopg2://dm:XXXXXXXXXX@db:5432/dm_course`, mật khẩu được Superset ẩn khi export), export lại gói chuẩn tại `dashboard/dashboard_export_superset.zip` và `outputs/dashboard_export_superset.zip`; kiểm chứng trực tiếp **thuần on-premise (chặn toàn bộ truy cập Internet ngoài localhost + hard reload)**: cả 7 thành phần (1 thẻ KPI + 1 bảng hàng đợi Top-100 + 5 biểu đồ phân tích) hiển thị đầy đủ không lỗi; xác nhận bộ lọc **`Dải số tiền`** áp dụng chính xác cho **Biểu đồ 1 (KPI: `93 → 38 → 93`)** và **Biểu đồ 4 (Cột chồng theo dải tiền: `38` bắt được / `50` bỏ sót ở dải `2) 0-10`)**, 5 thành phần còn lại (`2, 3, 5, 6, 7`) giữ nguyên toàn Ngày 1; SQL Lab trên database **`dm_course`** đối soát khớp tuyệt đối `284807 | 93 | 31 | 30`.
 
 ---
 
@@ -134,7 +134,9 @@ Dashboard **"Đồ án 6 - Phát hiện gian lận thẻ"** gồm 5 biểu đồ
 | **6** | Phân phối điểm bất thường Isolation Forest & LOF theo phân vị (Ngày 1) | Line / Bar Chart | Điểm bất thường của họ mô hình chính (`iforest_score`, `lof_score`) phân bố ra sao qua 10 decile rủi ro? | `Fact_Transaction` (`Dataset 5` trong `dashboard_virtual_datasets_mong.sql`) | Decile 01 (`Top 10%` rủi ro nhất) tập trung **`183/201` gian lận (`91,04%`)** |
 | **7** | Gian lận thực tế & bắt được trong Top-100 theo Giờ tương đối (`rel_hour`) | Bar / Time-Series Chart | Gian lận và hiệu quả bắt Top-100 biến động thế nào qua 24 giờ tương đối của Ngày 1 (`rel_hour = 24..47`)? | `Fact_Transaction` JOIN `Dim_Hour` (`vw_dash_02_hourly_fraud_heatmap` / `Dataset 6`) | Tổng `201` gian lận Ngày 1; bắt `93` (RF), `31` (IForest), `30` (LOF) |
 
-- **Bộ lọc (Filter):** `Dải số tiền` (`dai_amount` từ `Dim_AmountBand`) áp dụng tương tác cho Biểu đồ 1 và Biểu đồ 4.
+- **Bộ lọc (Filter):** `Dải số tiền` (`dai_amount` từ `Dim_AmountBand`) áp dụng tương tác chính xác cho **Biểu đồ 1 (KPI Big Number)** và **Biểu đồ 4 (Cột chồng theo dải số tiền)**; 5 thành phần còn lại (`2, 3, 5, 6, 7`) được cấu hình `excluded` giữ nguyên bối cảnh Toàn Ngày 1.
+- **Kết nối Kho dữ liệu trong gói export (`dashboard/dashboard_export_superset.zip`):** Đã đồng bộ hoàn toàn sang database **`dm_course`** (`postgresql+psycopg2://dm:XXXXXXXXXX@db:5432/dm_course` trong Docker Compose, hoặc đổi host `db` → `localhost` / `host.docker.internal` nếu kết nối PostgreSQL cài trực tiếp trên máy host).
+- **Giải trình số thành phần Dashboard (7 thành phần so với ngưỡng ≤ 6 biểu đồ của Brief):** Gồm **5 biểu đồ phân tích đồ họa** (`#3, #4, #5, #6, #7` — đạt chuẩn `≥ 4` và `≤ 6` biểu đồ), cộng thêm **1 thẻ KPI Big Number (`#1`)** và **1 bảng hàng đợi tra cứu Top-100 (`#2`)**.
 
 ---
 

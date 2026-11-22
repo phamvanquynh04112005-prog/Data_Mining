@@ -12,4 +12,5 @@ data.rar
 *.rar
 presentation/*.docx
 presentation/*.pptx
+presentation/demo_video/
 ~$*
