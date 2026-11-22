@@ -8,6 +8,8 @@ review_fixes/
 __pycache__/
 .ipynb_checkpoints/
 DoAn6_Nhom5_DataMining_Submission.zip
+data.rar
+*.rar
+presentation/*.docx
+presentation/*.pptx
 ~$*
-
-
